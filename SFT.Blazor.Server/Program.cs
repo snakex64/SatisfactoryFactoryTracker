@@ -12,8 +12,28 @@ builder.Services.AddMudServices();
 
 builder.Services.AddDbContext<SatisfactoryDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("sftdb")
-        ?? "Host=localhost;Port=5432;Database=sftdb;Username=postgres;Password=postgres";
+    var connectionString = builder.Configuration.GetConnectionString("sftdb");
+    if (string.IsNullOrWhiteSpace(connectionString))
+    {
+        var host = Environment.GetEnvironmentVariable("SFT_DB_HOST") ?? "localhost";
+        var port = Environment.GetEnvironmentVariable("SFT_DB_PORT") ?? "5432";
+        var database = Environment.GetEnvironmentVariable("SFT_DB_NAME") ?? "sftdb";
+        var username = Environment.GetEnvironmentVariable("SFT_DB_USERNAME");
+        var password = Environment.GetEnvironmentVariable("SFT_DB_PASSWORD");
+
+        var parts = new List<string> { $"Host={host}", $"Port={port}", $"Database={database}" };
+        if (!string.IsNullOrWhiteSpace(username))
+        {
+            parts.Add($"Username={username}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(password))
+        {
+            parts.Add($"Password={password}");
+        }
+
+        connectionString = string.Join(';', parts);
+    }
 
     options.UseNpgsql(connectionString);
 });

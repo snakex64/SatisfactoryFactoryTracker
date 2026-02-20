@@ -22,17 +22,17 @@ SatisfactoryFactoryTracker is a .NET 10 Blazor Server application for tracking S
 1. Ensure Docker is running.
 2. Run the Aspire host:
    ```bash
-   dotnet run --project /home/runner/work/SatisfactoryFactoryTracker/SatisfactoryFactoryTracker/SFT.AppHost/SFT.AppHost.csproj
+   dotnet run --project SFT.AppHost/SFT.AppHost.csproj
    ```
 3. Open the URL shown in console output.
 
 ## Development
 Build:
 ```bash
-dotnet build /home/runner/work/SatisfactoryFactoryTracker/SatisfactoryFactoryTracker/SatisfactoryFactoryTracker.slnx
+dotnet build SatisfactoryFactoryTracker.slnx
 ```
 
 Test:
 ```bash
-dotnet test /home/runner/work/SatisfactoryFactoryTracker/SatisfactoryFactoryTracker/SatisfactoryFactoryTracker.slnx
+dotnet test SatisfactoryFactoryTracker.slnx
 ```
