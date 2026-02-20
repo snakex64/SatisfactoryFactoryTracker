@@ -1,9 +1,3 @@
-﻿/.vs
-/Aspire.AppHost/obj
-/SFT.Blazor.Core/bin
-/SFT.Blazor.Core/obj
-/SFT.Blazor.Server/bin
-/SFT.Blazor.Server/obj
-/SFT.Core/bin
-/SFT.Core/obj
-*.user
+/.vs
+**/bin/
+**/obj/
