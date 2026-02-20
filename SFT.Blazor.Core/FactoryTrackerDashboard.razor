@@ -1,0 +1,56 @@
+@using SFT.Core.Queries
+@inject IFactoryTrackerQueries TrackerQueries
+
+<MudText Typo="Typo.h4" Class="mb-4">Satisfactory Factory Tracker</MudText>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">@errorMessage</MudAlert>
+}
+
+<MudText Typo="Typo.h6">Mines</MudText>
+<MudTable Items="@mines" Dense="true" Hover="true" Class="mb-6">
+    <HeaderContent>
+        <MudTh>Mine</MudTh>
+        <MudTh>Resource</MudTh>
+        <MudTh>Output / min</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Mine">@context.Name</MudTd>
+        <MudTd DataLabel="Resource">@context.Resource?.Name</MudTd>
+        <MudTd DataLabel="Output / min">@context.OutputPerMinute</MudTd>
+    </RowTemplate>
+</MudTable>
+
+<MudText Typo="Typo.h6">Factories</MudText>
+<MudTable Items="@factories" Dense="true" Hover="true">
+    <HeaderContent>
+        <MudTh>Factory</MudTh>
+        <MudTh>Inputs</MudTh>
+        <MudTh>Outputs</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Factory">@context.Name</MudTd>
+        <MudTd DataLabel="Inputs">@string.Join(", ", context.Inputs.Select(i => $"{i.Resource?.Name}: {i.AmountPerMinute}/min"))</MudTd>
+        <MudTd DataLabel="Outputs">@string.Join(", ", context.Outputs.Select(o => $"{o.Resource?.Name}: {o.AmountPerMinute}/min"))</MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private IReadOnlyList<Mine> mines = [];
+    private IReadOnlyList<Factory> factories = [];
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            mines = await TrackerQueries.GetMinesAsync();
+            factories = await TrackerQueries.GetFactoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Unable to load data from PostgreSQL: {ex.Message}";
+        }
+    }
+}

@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="SFT.AppHost/SFT.AppHost.csproj" />
+  <Project Path="SFT.Blazor.Core/SFT.Blazor.Core.csproj" />
+  <Project Path="SFT.Blazor.Server/SFT.Blazor.Server.csproj" />
+  <Project Path="SFT.Core/SFT.Core.csproj" />
+</Solution>
