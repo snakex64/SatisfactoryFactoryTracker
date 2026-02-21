@@ -7,37 +7,37 @@ namespace GameDataSchema
     public class GameData
     {
         [JsonPropertyName("belts")]
-        public List<Belt> Belts { get; set; }
+        public required List<Belt> Belts { get; set; }
 
         [JsonPropertyName("pipes")]
-        public List<Pipe> Pipes { get; set; }
+        public required List<Pipe> Pipes { get; set; }
 
         [JsonPropertyName("buildings")]
-        public List<Building> Buildings { get; set; }
+        public required List<Building> Buildings { get; set; }
 
         [JsonPropertyName("miners")]
-        public List<Miner> Miners { get; set; }
+        public required List<Miner> Miners { get; set; }
 
         [JsonPropertyName("items")]
-        public List<Item> Items { get; set; }
+        public required List<Item> Items { get; set; }
 
         [JsonPropertyName("fluids")]
-        public List<Fluid> Fluids { get; set; }
+        public required List<Fluid> Fluids { get; set; }
 
         [JsonPropertyName("recipes")]
-        public List<Recipe> Recipes { get; set; }
+        public required List<Recipe> Recipes { get; set; }
 
         [JsonPropertyName("resources")]
-        public List<Resource> Resources { get; set; }
+        public required List<Resource> Resources { get; set; }
     }
 
     public class Belt
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("key_name")]
-        public string KeyName { get; set; }
+        public required string KeyName { get; set; }
 
         [JsonPropertyName("rate")]
         public int Rate { get; set; }
@@ -46,10 +46,10 @@ namespace GameDataSchema
     public class Pipe
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("key_name")]
-        public string KeyName { get; set; }
+        public required string KeyName { get; set; }
 
         [JsonPropertyName("rate")]
         public int Rate { get; set; }
@@ -58,13 +58,13 @@ namespace GameDataSchema
     public class Building
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("key_name")]
-        public string KeyName { get; set; }
+        public required string KeyName { get; set; }
 
         [JsonPropertyName("category")]
-        public string Category { get; set; }
+        public required string Category { get; set; }
 
         [JsonPropertyName("power")]
         public double Power { get; set; }
@@ -82,13 +82,13 @@ namespace GameDataSchema
     public class Miner
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("key_name")]
-        public string KeyName { get; set; }
+        public required string KeyName { get; set; }
 
         [JsonPropertyName("category")]
-        public string Category { get; set; }
+        public required string Category { get; set; }
 
         [JsonPropertyName("base_rate")]
         public double BaseRate { get; set; }
@@ -100,10 +100,10 @@ namespace GameDataSchema
     public class Item
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("key_name")]
-        public string KeyName { get; set; }
+        public required string KeyName { get; set; }
 
         [JsonPropertyName("tier")]
         public int Tier { get; set; }
@@ -115,10 +115,10 @@ namespace GameDataSchema
     public class Fluid
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("key_name")]
-        public string KeyName { get; set; }
+        public required string KeyName { get; set; }
 
         [JsonPropertyName("tier")]
         public int Tier { get; set; }
@@ -127,13 +127,13 @@ namespace GameDataSchema
     public class Recipe
     {
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public required string Name { get; set; }
 
         [JsonPropertyName("key_name")]
-        public string KeyName { get; set; }
+        public required string KeyName { get; set; }
 
         [JsonPropertyName("category")]
-        public string Category { get; set; }
+        public required string Category { get; set; }
 
         [JsonPropertyName("time")]
         public double Time { get; set; }
@@ -144,19 +144,19 @@ namespace GameDataSchema
         // Ingredients and Products are represented as lists of mixed arrays (e.g., ["iron-ore", 1]).
         // JsonElement handles the mixed string/number types smoothly without requiring a custom JsonConverter.
         [JsonPropertyName("ingredients")]
-        public List<List<JsonElement>> Ingredients { get; set; }
+        public required List<List<JsonElement>> Ingredients { get; set; }
 
         [JsonPropertyName("products")]
-        public List<List<JsonElement>> Products { get; set; }
+        public required List<List<JsonElement>> Products { get; set; }
     }
 
     public class Resource
     {
         [JsonPropertyName("key_name")]
-        public string KeyName { get; set; }
+        public required string KeyName { get; set; }
 
         [JsonPropertyName("category")]
-        public string Category { get; set; }
+        public required string Category { get; set; }
 
         [JsonPropertyName("priority")]
         public int Priority { get; set; }
