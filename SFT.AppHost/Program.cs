@@ -1,6 +1,7 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var postgres = builder.AddPostgres("postgres");
+var postgres = builder.AddPostgres("postgres")
+    .WithDataVolume("postgres-data");
 var database = postgres.AddDatabase("sftdb");
 
 builder.AddProject("sft-blazor-server", "../SFT.Blazor.Server/SFT.Blazor.Server.csproj")
