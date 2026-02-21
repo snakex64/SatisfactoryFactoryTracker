@@ -75,3 +75,5 @@ app.MapRazorComponents<App>()
     .AddAdditionalAssemblies(typeof(SFT.Blazor.Core.Pages.Home).Assembly);
 
 app.Run();
+
+public partial class Program { }

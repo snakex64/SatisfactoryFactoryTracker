@@ -1,13 +1,13 @@
 <MudDialog>
     <DialogContent>
         <MudForm @ref="form" @bind-IsValid="isValid">
-            <MudTextField @bind-Value="name" Label="Factory Name" Required="true" RequiredError="Name is required." Class="mb-3" />
+            <MudTextField @bind-Value="name" Label="Factory Name" Required="true" RequiredError="Name is required." Class="mb-3" data-test-id="factory-dialog-name" />
             <MudTextField @bind-Value="description" Label="Description" Lines="3" />
         </MudForm>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit">@(Factory is null ? "Add" : "Save")</MudButton>
+        <MudButton OnClick="Cancel" data-test-id="factory-dialog-cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" data-test-id="factory-dialog-submit">@(Factory is null ? "Add" : "Save")</MudButton>
     </DialogActions>
 </MudDialog>
 

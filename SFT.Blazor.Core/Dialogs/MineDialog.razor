@@ -1,7 +1,7 @@
 <MudDialog>
     <DialogContent>
         <MudForm @ref="form" @bind-IsValid="isValid">
-            <MudTextField @bind-Value="name" Label="Mine Name" Required="true" RequiredError="Name is required." Class="mb-3" />
+            <MudTextField @bind-Value="name" Label="Mine Name" Required="true" RequiredError="Name is required." Class="mb-3" data-test-id="mine-dialog-name" />
             <MudSelect @bind-Value="resourceId" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3">
                 @foreach (var resource in Resources)
                 {
@@ -12,8 +12,8 @@
         </MudForm>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit">@(Mine is null ? "Add" : "Save")</MudButton>
+        <MudButton OnClick="Cancel" data-test-id="mine-dialog-cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" data-test-id="mine-dialog-submit">@(Mine is null ? "Add" : "Save")</MudButton>
     </DialogActions>
 </MudDialog>
 
