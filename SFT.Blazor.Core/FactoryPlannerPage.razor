@@ -101,7 +101,11 @@
             }
             else
             {
-                <FactoryLevelDetail Level="selectedLevel" />
+                <FactoryLevelDetail Level="selectedLevel"
+                                    AllResources="allResources"
+                                    AllMines="mines"
+                                    AllLevels="factories.SelectMany(f => f.Levels).ToList()"
+                                    OnChanged="OnLevelChangedAsync" />
             }
         </MudPaper>
     </MudItem>
@@ -111,6 +115,7 @@
     private IReadOnlyList<Mine> mines = [];
     private IReadOnlyList<Factory> factories = [];
     private IReadOnlyList<Resource> resources = [];
+    private IReadOnlyList<Resource> allResources = [];
     private FactoryLevel? selectedLevel;
     private string? errorMessage;
     private bool _isInteractive;
@@ -138,6 +143,7 @@
             mines = await Queries.GetMinesAsync();
             factories = await Queries.GetFactoriesAsync();
             resources = await Queries.GetRawResourcesAsync();
+            allResources = await Queries.GetResourcesAsync();
             errorMessage = null;
         }
         catch (Exception ex)
@@ -147,6 +153,14 @@
     }
 
     private void SelectLevel(FactoryLevel level) => selectedLevel = level;
+
+    private async Task OnLevelChangedAsync()
+    {
+        var previousLevelId = selectedLevel?.Id;
+        await LoadDataAsync();
+        if (previousLevelId is not null)
+            selectedLevel = factories.SelectMany(f => f.Levels).FirstOrDefault(l => l.Id == previousLevelId);
+    }
 
     // Mine dialogs
     private async Task OpenAddMineDialog()
