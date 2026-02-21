@@ -137,7 +137,7 @@
         {
             mines = await Queries.GetMinesAsync();
             factories = await Queries.GetFactoriesAsync();
-            resources = await Queries.GetResourcesAsync();
+            resources = await Queries.GetRawResourcesAsync();
             errorMessage = null;
         }
         catch (Exception ex)
