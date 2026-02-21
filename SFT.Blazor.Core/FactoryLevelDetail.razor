@@ -1,0 +1,13 @@
+@if (Level is not null)
+{
+    <MudText Typo="Typo.h5" Class="mb-2">@Level.Identifier</MudText>
+    @if (!string.IsNullOrWhiteSpace(Level.Description))
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">@Level.Description</MudText>
+    }
+    <MudText Typo="Typo.body2" Color="Color.Secondary">Level configuration coming soon.</MudText>
+}
+
+@code {
+    [Parameter] public FactoryLevel? Level { get; set; }
+}

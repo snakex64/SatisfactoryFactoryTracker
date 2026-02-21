@@ -1,0 +1,55 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="isValid">
+            <MudTextField @bind-Value="name" Label="Mine Name" Required="true" RequiredError="Name is required." Class="mb-3" />
+            <MudSelect @bind-Value="resourceId" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3">
+                @foreach (var resource in Resources)
+                {
+                    <MudSelectItem Value="resource.Id">@resource.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudNumericField @bind-Value="outputPerMinute" Label="Output per Minute" Min="0m" Required="true" RequiredError="Output is required." />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">@(Mine is null ? "Add" : "Save")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public Mine? Mine { get; set; }
+    [Parameter] public IReadOnlyList<Resource> Resources { get; set; } = [];
+
+    private MudForm form = null!;
+    private bool isValid;
+    private string name = string.Empty;
+    private int resourceId;
+    private decimal outputPerMinute;
+
+    protected override void OnParametersSet()
+    {
+        if (Mine is not null)
+        {
+            name = Mine.Name;
+            resourceId = Mine.ResourceId;
+            outputPerMinute = Mine.OutputPerMinute;
+        }
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!isValid) return;
+
+        var result = Mine is null
+            ? new Mine { Name = name, ResourceId = resourceId, OutputPerMinute = outputPerMinute }
+            : new Mine { Id = Mine.Id, Name = name, ResourceId = resourceId, OutputPerMinute = outputPerMinute };
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

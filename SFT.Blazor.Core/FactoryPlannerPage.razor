@@ -1,0 +1,343 @@
+@using SFT.Blazor.Core.Dialogs
+@using SFT.Core.Commands
+@using SFT.Core.Queries
+@inject IFactoryTrackerQueries Queries
+@inject IFactoryTrackerCommands Commands
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudGrid Spacing="0" Style="height: calc(100vh - 80px);">
+    <!-- Left tree panel -->
+    <MudItem xs="3" Style="border-right: 1px solid var(--mud-palette-divider); overflow-y: auto; height: 100%;">
+        <MudPaper Elevation="0" Class="pa-2">
+
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-2">@errorMessage</MudAlert>
+            }
+
+            <!-- Raw Ore Mines -->
+            <div class="d-flex align-center mb-1">
+                <MudText Typo="Typo.subtitle2" Class="flex-grow-1" Style="font-weight: 600;">Raw Ore Mines</MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" aria-label="Add mine" OnClick="OpenAddMineDialog" />
+            </div>
+            @foreach (var mine in mines)
+            {
+                <div class="d-flex align-center pl-2 mb-1">
+                    <MudText Typo="Typo.body2" Class="flex-grow-1">
+                        @mine.Name
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="display: inline; margin-left: 4px;">
+                            (@(mine.Resource?.Name ?? "?"), @mine.OutputPerMinute/min)
+                        </MudText>
+                    </MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit mine" OnClick="() => OpenEditMineDialog(mine)" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete mine" OnClick="() => DeleteMine(mine)" />
+                </div>
+            }
+
+            <MudDivider Class="my-2" />
+
+            <!-- Factories -->
+            <div class="d-flex align-center mb-1">
+                <MudText Typo="Typo.subtitle2" Class="flex-grow-1" Style="font-weight: 600;">Factories</MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" aria-label="Add factory" OnClick="OpenAddFactoryDialog" />
+            </div>
+            @foreach (var factory in factories)
+            {
+                <div class="mb-1">
+                    <div class="d-flex align-center pl-2">
+                        <div class="flex-grow-1">
+                            <MudText Typo="Typo.body2" Style="font-weight: 500;">@factory.Name</MudText>
+                            @if (!string.IsNullOrWhiteSpace(factory.Description))
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@factory.Description</MudText>
+                            }
+                        </div>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit factory" OnClick="() => OpenEditFactoryDialog(factory)" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete factory" OnClick="() => DeleteFactory(factory)" />
+                    </div>
+
+                    <!-- Levels under this factory -->
+                    <div class="pl-4">
+                        <div class="d-flex align-center">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="flex-grow-1">Levels</MudText>
+                            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" aria-label="Add level" OnClick="() => OpenAddLevelDialog(factory)" />
+                        </div>
+                        @foreach (var level in factory.Levels.OrderBy(l => l.Identifier))
+                        {
+                            <div class="d-flex align-center pl-2 mb-1 @(selectedLevel?.Id == level.Id ? "selected-level" : "")"
+                                 style="cursor: pointer; border-radius: 4px; @(selectedLevel?.Id == level.Id ? "background: var(--mud-palette-action-default-hover);" : "")">
+                                <div class="flex-grow-1" @onclick="() => SelectLevel(level)">
+                                    <MudText Typo="Typo.body2">@level.Identifier</MudText>
+                                    @if (!string.IsNullOrWhiteSpace(level.Description))
+                                    {
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@level.Description</MudText>
+                                    }
+                                </div>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit level" OnClick="() => OpenEditLevelDialog(level)" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete level" OnClick="() => DeleteLevel(level)" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <!-- Right detail panel -->
+    <MudItem xs="9" Style="overflow-y: auto; height: 100%;">
+        <MudPaper Elevation="0" Class="pa-4">
+            @if (selectedLevel is null)
+            {
+                <MudText Typo="Typo.body1" Color="Color.Secondary">Select a factory level to view its details.</MudText>
+            }
+            else
+            {
+                <FactoryLevelDetail Level="selectedLevel" />
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private IReadOnlyList<Mine> mines = [];
+    private IReadOnlyList<Factory> factories = [];
+    private IReadOnlyList<Resource> resources = [];
+    private FactoryLevel? selectedLevel;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            mines = await Queries.GetMinesAsync();
+            factories = await Queries.GetFactoriesAsync();
+            resources = await Queries.GetResourcesAsync();
+            errorMessage = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Unable to load data: {ex.Message}";
+        }
+    }
+
+    private void SelectLevel(FactoryLevel level) => selectedLevel = level;
+
+    // Mine dialogs
+    private async Task OpenAddMineDialog()
+    {
+        var parameters = new DialogParameters<MineDialog>
+        {
+            { x => x.Resources, resources }
+        };
+        var dialog = await DialogService.ShowAsync<MineDialog>("Add Mine", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is Mine mine)
+        {
+            try
+            {
+                await Commands.AddMineAsync(mine);
+                await LoadDataAsync();
+                Snackbar.Add("Mine added.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error adding mine: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditMineDialog(Mine mine)
+    {
+        var parameters = new DialogParameters<MineDialog>
+        {
+            { x => x.Mine, mine },
+            { x => x.Resources, resources }
+        };
+        var dialog = await DialogService.ShowAsync<MineDialog>("Edit Mine", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is Mine updated)
+        {
+            try
+            {
+                await Commands.UpdateMineAsync(updated);
+                await LoadDataAsync();
+                Snackbar.Add("Mine updated.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error updating mine: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteMine(Mine mine)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Message, $"Are you sure you want to delete mine \"{mine.Name}\"?" }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Mine", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            try
+            {
+                await Commands.DeleteMineAsync(mine.Id);
+                await LoadDataAsync();
+                Snackbar.Add("Mine deleted.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error deleting mine: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    // Factory dialogs
+    private async Task OpenAddFactoryDialog()
+    {
+        var dialog = await DialogService.ShowAsync<FactoryDialog>("Add Factory");
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is Factory factory)
+        {
+            try
+            {
+                await Commands.AddFactoryAsync(factory);
+                await LoadDataAsync();
+                Snackbar.Add("Factory added.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error adding factory: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditFactoryDialog(Factory factory)
+    {
+        var parameters = new DialogParameters<FactoryDialog>
+        {
+            { x => x.Factory, factory }
+        };
+        var dialog = await DialogService.ShowAsync<FactoryDialog>("Edit Factory", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is Factory updated)
+        {
+            try
+            {
+                await Commands.UpdateFactoryAsync(updated);
+                await LoadDataAsync();
+                Snackbar.Add("Factory updated.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error updating factory: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteFactory(Factory factory)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Message, $"Are you sure you want to delete factory \"{factory.Name}\" and all its levels?" }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Factory", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            try
+            {
+                if (selectedLevel?.FactoryId == factory.Id)
+                    selectedLevel = null;
+                await Commands.DeleteFactoryAsync(factory.Id);
+                await LoadDataAsync();
+                Snackbar.Add("Factory deleted.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error deleting factory: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    // Level dialogs
+    private async Task OpenAddLevelDialog(Factory factory)
+    {
+        var parameters = new DialogParameters<FactoryLevelDialog>
+        {
+            { x => x.FactoryId, factory.Id }
+        };
+        var dialog = await DialogService.ShowAsync<FactoryLevelDialog>("Add Level", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is FactoryLevel level)
+        {
+            try
+            {
+                await Commands.AddFactoryLevelAsync(level);
+                await LoadDataAsync();
+                Snackbar.Add("Level added.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error adding level: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditLevelDialog(FactoryLevel level)
+    {
+        var parameters = new DialogParameters<FactoryLevelDialog>
+        {
+            { x => x.Level, level }
+        };
+        var dialog = await DialogService.ShowAsync<FactoryLevelDialog>("Edit Level", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is FactoryLevel updated)
+        {
+            try
+            {
+                await Commands.UpdateFactoryLevelAsync(updated);
+                await LoadDataAsync();
+                if (selectedLevel?.Id == updated.Id)
+                    selectedLevel = factories.SelectMany(f => f.Levels).FirstOrDefault(l => l.Id == updated.Id);
+                Snackbar.Add("Level updated.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error updating level: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteLevel(FactoryLevel level)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Message, $"Are you sure you want to delete level \"{level.Identifier}\"?" }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Level", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            try
+            {
+                if (selectedLevel?.Id == level.Id)
+                    selectedLevel = null;
+                await Commands.DeleteFactoryLevelAsync(level.Id);
+                await LoadDataAsync();
+                Snackbar.Add("Level deleted.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error deleting level: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using SFT.Blazor.Server.Components;
+using SFT.Core.Commands;
 using SFT.Core.Data;
 using SFT.Core.Queries;
 
@@ -38,6 +39,7 @@ builder.Services.AddDbContext<SatisfactoryDbContext>(options =>
     options.UseNpgsql(connectionString);
 });
 builder.Services.AddScoped<IFactoryTrackerQueries, FactoryTrackerQueries>();
+builder.Services.AddScoped<IFactoryTrackerCommands, FactoryTrackerCommands>();
 builder.Services.AddScoped<GameDataSeeder>();
 builder.Services.AddScoped<DatabaseInitializer>();
 
