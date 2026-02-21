@@ -11,10 +11,13 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
     public DbSet<FactoryLevel> FactoryLevels => Set<FactoryLevel>();
     public DbSet<FactoryInput> FactoryInputs => Set<FactoryInput>();
     public DbSet<FactoryOutput> FactoryOutputs => Set<FactoryOutput>();
+    public DbSet<ProductionRecipe> ProductionRecipes => Set<ProductionRecipe>();
+    public DbSet<ProductionRecipeResource> ProductionRecipeResources => Set<ProductionRecipeResource>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Resource>().HasIndex(r => r.Name).IsUnique();
+        modelBuilder.Entity<Resource>().HasIndex(r => r.KeyName).IsUnique();
 
         modelBuilder.Entity<Mine>()
             .HasOne(m => m.Resource)
@@ -69,5 +72,23 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
             .WithMany()
             .HasForeignKey(o => o.ResourceId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ProductionRecipe>()
+            .HasIndex(r => r.KeyName)
+            .IsUnique();
+
+        modelBuilder.Entity<ProductionRecipeResource>()
+            .HasOne(r => r.ProductionRecipe)
+            .WithMany(p => p.Resources)
+            .HasForeignKey(r => r.ProductionRecipeId);
+
+        modelBuilder.Entity<ProductionRecipeResource>()
+            .HasOne(r => r.Resource)
+            .WithMany(resource => resource.RecipeUsages)
+            .HasForeignKey(r => r.ResourceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ProductionRecipeResource>()
+            .HasIndex(r => new { r.ProductionRecipeId, r.ResourceId, r.IsInput });
     }
 }
