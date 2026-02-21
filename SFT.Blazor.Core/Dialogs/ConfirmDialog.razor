@@ -3,8 +3,8 @@
         <MudText>@Message</MudText>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="Confirm">@ConfirmText</MudButton>
+        <MudButton OnClick="Cancel" data-test-id="confirm-dialog-cancel">Cancel</MudButton>
+        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="Confirm" data-test-id="confirm-dialog-confirm">@ConfirmText</MudButton>
     </DialogActions>
 </MudDialog>
 
