@@ -8,6 +8,7 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<Mine> Mines => Set<Mine>();
     public DbSet<Factory> Factories => Set<Factory>();
+    public DbSet<FactoryLevel> FactoryLevels => Set<FactoryLevel>();
     public DbSet<FactoryInput> FactoryInputs => Set<FactoryInput>();
     public DbSet<FactoryOutput> FactoryOutputs => Set<FactoryOutput>();
 
@@ -21,10 +22,19 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
             .HasForeignKey(m => m.ResourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<FactoryLevel>()
+            .HasOne(l => l.Factory)
+            .WithMany(f => f.Levels)
+            .HasForeignKey(l => l.FactoryId);
+
+        modelBuilder.Entity<FactoryLevel>()
+            .HasIndex(l => new { l.FactoryId, l.Identifier })
+            .IsUnique();
+
         modelBuilder.Entity<FactoryInput>()
-            .HasOne(i => i.Factory)
-            .WithMany(f => f.Inputs)
-            .HasForeignKey(i => i.FactoryId);
+            .HasOne(i => i.FactoryLevel)
+            .WithMany(l => l.Inputs)
+            .HasForeignKey(i => i.FactoryLevelId);
 
         modelBuilder.Entity<FactoryInput>()
             .HasOne(i => i.Resource)
@@ -32,10 +42,27 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
             .HasForeignKey(i => i.ResourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<FactoryInput>()
+            .HasOne(i => i.SourceMine)
+            .WithMany()
+            .HasForeignKey(i => i.SourceMineId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FactoryInput>()
+            .HasOne(i => i.SourceFactoryLevel)
+            .WithMany()
+            .HasForeignKey(i => i.SourceFactoryLevelId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FactoryInput>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_FactoryInputs_Source",
+                "(\"SourceMineId\" IS NULL) <> (\"SourceFactoryLevelId\" IS NULL)"));
+
         modelBuilder.Entity<FactoryOutput>()
-            .HasOne(o => o.Factory)
-            .WithMany(f => f.Outputs)
-            .HasForeignKey(o => o.FactoryId);
+            .HasOne(o => o.FactoryLevel)
+            .WithMany(l => l.Outputs)
+            .HasForeignKey(o => o.FactoryLevelId);
 
         modelBuilder.Entity<FactoryOutput>()
             .HasOne(o => o.Resource)

@@ -26,13 +26,13 @@
 <MudTable Items="@factories" Dense="true" Hover="true">
     <HeaderContent>
         <MudTh>Factory</MudTh>
-        <MudTh>Inputs</MudTh>
-        <MudTh>Outputs</MudTh>
+        <MudTh>Description</MudTh>
+        <MudTh>Levels</MudTh>
     </HeaderContent>
     <RowTemplate>
         <MudTd DataLabel="Factory">@context.Name</MudTd>
-        <MudTd DataLabel="Inputs">@string.Join(", ", context.Inputs.Select(i => $"{i.Resource?.Name}: {i.AmountPerMinute}/min"))</MudTd>
-        <MudTd DataLabel="Outputs">@string.Join(", ", context.Outputs.Select(o => $"{o.Resource?.Name}: {o.AmountPerMinute}/min"))</MudTd>
+        <MudTd DataLabel="Description">@context.Description</MudTd>
+        <MudTd DataLabel="Levels">@string.Join(" | ", context.Levels.OrderBy(l => l.Identifier).Select(l => $"{l.Identifier}: IN[{string.Join(", ", l.Inputs.Select(i => $"{i.Resource?.Name}: {i.AmountPerMinute}/min ({(i.SourceMine is not null ? $"Mine {i.SourceMine.Name}" : $"Level {i.SourceFactoryLevel?.Identifier}")})"))}] OUT[{string.Join(", ", l.Outputs.Select(o => $"{o.Resource?.Name}: {o.AmountPerMinute}/min"))}]"))</MudTd>
     </RowTemplate>
 </MudTable>
 

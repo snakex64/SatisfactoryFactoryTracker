@@ -18,10 +18,18 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
     public async Task<IReadOnlyList<Factory>> GetFactoriesAsync(CancellationToken cancellationToken = default)
     {
         return await dbContext.Factories
-            .Include(f => f.Inputs)
-                .ThenInclude(i => i.Resource)
-            .Include(f => f.Outputs)
-                .ThenInclude(o => o.Resource)
+            .Include(f => f.Levels)
+                .ThenInclude(l => l.Inputs)
+                    .ThenInclude(i => i.Resource)
+            .Include(f => f.Levels)
+                .ThenInclude(l => l.Inputs)
+                    .ThenInclude(i => i.SourceMine)
+            .Include(f => f.Levels)
+                .ThenInclude(l => l.Inputs)
+                    .ThenInclude(i => i.SourceFactoryLevel)
+            .Include(f => f.Levels)
+                .ThenInclude(l => l.Outputs)
+                    .ThenInclude(o => o.Resource)
             .AsNoTracking()
             .OrderBy(f => f.Name)
             .ToListAsync(cancellationToken);
