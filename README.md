@@ -2,8 +2,8 @@
 
 SatisfactoryFactoryTracker is a .NET 10 Blazor Server application for tracking Satisfactory production chains:
 - which mines produce which resources and at what rate
-- which factories consume and produce resources
-- flow rates between resources, mines, and factories
+- which factory levels consume and produce resources
+- flow rates between resources, mines, and factory levels
 
 ## Architecture
 - **SFT.Core**: domain models, EF Core DbContext, and query services
@@ -34,6 +34,8 @@ SatisfactoryFactoryTracker is a .NET 10 Blazor Server application for tracking S
 3. Open the URL shown in console output.
 
 ## Development
+On application startup, the server automatically applies EF Core migrations and seeds production recipe/resource data from the embedded `SFT.Core/data.json` file.
+
 Build:
 ```bash
 dotnet build SatisfactoryFactoryTracker.slnx
@@ -43,3 +45,5 @@ Test:
 ```bash
 dotnet test SatisfactoryFactoryTracker.slnx
 ```
+
+Resource exploration UI is available at `/resources`.

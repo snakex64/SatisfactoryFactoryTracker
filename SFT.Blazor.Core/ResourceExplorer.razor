@@ -1,0 +1,44 @@
+@using SFT.Core.Queries
+@inject IFactoryTrackerQueries TrackerQueries
+
+<MudText Typo="Typo.h4" Class="mb-4">Resource Explorer</MudText>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">@errorMessage</MudAlert>
+}
+
+<MudTable Items="@resources" Dense="true" Hover="true">
+    <HeaderContent>
+        <MudTh>Resource</MudTh>
+        <MudTh>Produced By</MudTh>
+        <MudTh>Consumed By</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Resource">@context.ResourceName</MudTd>
+        <MudTd DataLabel="Produced By">@FormatRecipes(context.ProducedBy)</MudTd>
+        <MudTd DataLabel="Consumed By">@FormatRecipes(context.ConsumedBy)</MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    private IReadOnlyList<ResourceRecipeView> resources = [];
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            resources = await TrackerQueries.GetResourceRecipesAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Unable to load resource data: {ex.Message}";
+        }
+    }
+
+    private static string FormatRecipes(IReadOnlyList<RecipeView> recipes)
+        => recipes.Count == 0
+            ? "-"
+            : string.Join(" | ", recipes.Select(r => $"{r.RecipeName}: {r.Amount}/craft ({r.AmountPerMinute}/min) [{r.CraftTimeSeconds}s]"));
+}

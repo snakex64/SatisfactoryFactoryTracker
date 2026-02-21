@@ -38,8 +38,23 @@ builder.Services.AddDbContext<SatisfactoryDbContext>(options =>
     options.UseNpgsql(connectionString);
 });
 builder.Services.AddScoped<IFactoryTrackerQueries, FactoryTrackerQueries>();
+builder.Services.AddScoped<GameDataSeeder>();
+builder.Services.AddScoped<DatabaseInitializer>();
 
 var app = builder.Build();
+
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    try
+    {
+        var databaseInitializer = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
+        await databaseInitializer.InitializeAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex, "Database initialization failed during startup. Check database connection settings and ensure PostgreSQL is reachable.");
+    }
+}
 
 if (!app.Environment.IsDevelopment())
 {

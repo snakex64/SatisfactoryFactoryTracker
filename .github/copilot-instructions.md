@@ -3,8 +3,8 @@
 ## Project Overview
 SatisfactoryFactoryTracker tracks Satisfactory production chains:
 - mines and their ore output rates
-- factories and their input/output rates
-- resource flow between mines and factories
+- factories with named levels and their input/output rates
+- resource flow between mines and factory levels
 
 ## Solution Structure
 - `SFT.Core`: domain entities, EF Core DbContext, and query services

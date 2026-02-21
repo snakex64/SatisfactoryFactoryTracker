@@ -2,6 +2,11 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+// NOTE:
+// - This file defines the schema used to deserialize the embedded SFT.Core/data.json game data.
+// - Do not load or parse data.json manually in UI code; use SFT.Core.Data.GameDataSeeder which reads
+//   the embedded resource stream and populates database tables from these types.
+
 namespace GameDataSchema
 {
     public class GameData
