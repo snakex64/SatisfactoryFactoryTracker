@@ -19,17 +19,24 @@ public class GameDataSeeder(SatisfactoryDbContext dbContext, ILogger<GameDataSee
 
         var gameData = LoadGameData();
 
+        // Build a lookup of raw-resource categories so item/fluid names don't override them.
+        var rawResourceCategories = gameData.Resources
+            .ToDictionary(r => r.KeyName, r => r.Category);
+
         var resourceMeta = gameData.Resources
             .ToDictionary(r => r.KeyName, r => (Name: r.KeyName, r.Category));
 
         foreach (var item in gameData.Items)
         {
-            resourceMeta[item.KeyName] = (item.Name, "item");
+            // Preserve the raw-resource category if this key is in the resources list.
+            var category = rawResourceCategories.TryGetValue(item.KeyName, out var rawCat) ? rawCat : "item";
+            resourceMeta[item.KeyName] = (item.Name, category);
         }
 
         foreach (var fluid in gameData.Fluids)
         {
-            resourceMeta[fluid.KeyName] = (fluid.Name, "fluid");
+            var category = rawResourceCategories.TryGetValue(fluid.KeyName, out var rawCat) ? rawCat : "fluid";
+            resourceMeta[fluid.KeyName] = (fluid.Name, category);
         }
 
         var resourcesByKey = await dbContext.Resources

@@ -55,6 +55,7 @@ public sealed class AppFixture : IAsyncDisposable
 
         builder.Services.AddScoped<IFactoryTrackerQueries, FactoryTrackerQueries>();
         builder.Services.AddScoped<IFactoryTrackerCommands, FactoryTrackerCommands>();
+        builder.Services.AddScoped<GameDataSeeder>();
 
         _app = builder.Build();
 
@@ -65,6 +66,13 @@ public sealed class AppFixture : IAsyncDisposable
             .AddAdditionalAssemblies(typeof(SFT.Blazor.Core.Pages.Home).Assembly);
 
         await _app.StartAsync();
+
+        // Seed the InMemory database with game data so queries return real resources.
+        await using var scope = _app.Services.CreateAsyncScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<SatisfactoryDbContext>();
+        await dbContext.Database.EnsureCreatedAsync();
+        var seeder = scope.ServiceProvider.GetRequiredService<GameDataSeeder>();
+        await seeder.SeedFromEmbeddedJsonAsync();
 
         // Read the port that Kestrel actually bound to.
         var server = _app.Services.GetRequiredService<IServer>();
