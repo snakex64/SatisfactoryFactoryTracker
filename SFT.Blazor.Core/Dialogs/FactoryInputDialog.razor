@@ -1,0 +1,106 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="isValid">
+            <MudAutocomplete T="Resource" @bind-Value="selectedResource" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3"
+                             SearchFunc="SearchResources" ToStringFunc="@(r => r?.Name ?? string.Empty)" CoerceText="false"
+                             OpenOnFocus="true" MinCharacters="0" data-test-id="input-dialog-resource" />
+            <MudNumericField T="decimal" @bind-Value="amountPerMinute" Label="Amount per Minute" Min="0.01m" Required="true" RequiredError="Amount is required." Class="mb-3" data-test-id="input-dialog-amount" />
+            <MudSelect T="string" @bind-Value="sourceType" Label="Source Type" Required="true" Class="mb-3" data-test-id="input-dialog-source-type">
+                <MudSelectItem Value="@("Mine")">Raw Mine</MudSelectItem>
+                <MudSelectItem Value="@("FactoryLevel")">Factory Level</MudSelectItem>
+            </MudSelect>
+            @if (sourceType == "Mine")
+            {
+                <MudSelect T="Mine" @bind-Value="selectedMine" Label="Mine" Required="true" RequiredError="Mine is required."
+                           ToStringFunc="@(m => m is null ? string.Empty : $"{m.Name} ({m.Resource?.Name ?? "?"}, {m.OutputPerMinute}/min)")"
+                           data-test-id="input-dialog-mine">
+                    @foreach (var mine in Mines)
+                    {
+                        <MudSelectItem Value="mine">@mine.Name (@(mine.Resource?.Name ?? "?"), @mine.OutputPerMinute/min)</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+            else if (sourceType == "FactoryLevel")
+            {
+                <MudSelect T="FactoryLevel" @bind-Value="selectedFactoryLevel" Label="Factory Level" Required="true" RequiredError="Factory Level is required."
+                           ToStringFunc="@(l => l is null ? string.Empty : $"{l.Factory?.Name} / {l.Identifier}")"
+                           data-test-id="input-dialog-factory-level">
+                    @foreach (var level in AllLevels)
+                    {
+                        <MudSelectItem Value="level">@level.Factory?.Name / @level.Identifier</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" data-test-id="input-dialog-cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" data-test-id="input-dialog-submit">@(Input is null ? "Add" : "Save")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public FactoryInput? Input { get; set; }
+    [Parameter] public int FactoryLevelId { get; set; }
+    [Parameter] public IReadOnlyList<Resource> Resources { get; set; } = [];
+    [Parameter] public IReadOnlyList<Mine> Mines { get; set; } = [];
+    [Parameter] public IReadOnlyList<FactoryLevel> AllLevels { get; set; } = [];
+
+    private MudForm form = null!;
+    private bool isValid;
+    private Resource? selectedResource;
+    private decimal amountPerMinute;
+    private string sourceType = "Mine";
+    private Mine? selectedMine;
+    private FactoryLevel? selectedFactoryLevel;
+
+    protected override void OnParametersSet()
+    {
+        if (Input is not null)
+        {
+            selectedResource = Resources.FirstOrDefault(r => r.Id == Input.ResourceId);
+            amountPerMinute = Input.AmountPerMinute;
+            if (Input.SourceMineId is not null)
+            {
+                sourceType = "Mine";
+                selectedMine = Mines.FirstOrDefault(m => m.Id == Input.SourceMineId);
+            }
+            else
+            {
+                sourceType = "FactoryLevel";
+                selectedFactoryLevel = AllLevels.FirstOrDefault(l => l.Id == Input.SourceFactoryLevelId);
+            }
+        }
+    }
+
+    private Task<IEnumerable<Resource>> SearchResources(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult<IEnumerable<Resource>>(Resources.ToList());
+        return Task.FromResult<IEnumerable<Resource>>(Resources.Where(r => r.Name.Contains(value, StringComparison.OrdinalIgnoreCase)).ToList());
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!isValid || selectedResource is null) return;
+        if (sourceType == "Mine" && selectedMine is null) return;
+        if (sourceType == "FactoryLevel" && selectedFactoryLevel is null) return;
+
+        var result = new FactoryInput
+        {
+            Id = Input?.Id ?? 0,
+            FactoryLevelId = Input?.FactoryLevelId ?? FactoryLevelId,
+            ResourceId = selectedResource.Id,
+            AmountPerMinute = amountPerMinute,
+            SourceMineId = sourceType == "Mine" ? selectedMine!.Id : null,
+            SourceFactoryLevelId = sourceType == "FactoryLevel" ? selectedFactoryLevel!.Id : null,
+        };
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

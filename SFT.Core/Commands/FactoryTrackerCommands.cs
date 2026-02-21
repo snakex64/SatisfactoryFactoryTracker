@@ -80,4 +80,54 @@ public class FactoryTrackerCommands(SatisfactoryDbContext dbContext) : IFactoryT
         dbContext.FactoryLevels.Remove(level);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<FactoryOutput> AddFactoryOutputAsync(FactoryOutput output, CancellationToken cancellationToken = default)
+    {
+        dbContext.FactoryOutputs.Add(output);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return output;
+    }
+
+    public async Task UpdateFactoryOutputAsync(FactoryOutput output, CancellationToken cancellationToken = default)
+    {
+        var existing = await dbContext.FactoryOutputs.FindAsync([output.Id], cancellationToken)
+            ?? throw new InvalidOperationException($"FactoryOutput {output.Id} not found.");
+        existing.ResourceId = output.ResourceId;
+        existing.AmountPerMinute = output.AmountPerMinute;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteFactoryOutputAsync(int outputId, CancellationToken cancellationToken = default)
+    {
+        var output = await dbContext.FactoryOutputs.FindAsync([outputId], cancellationToken)
+            ?? throw new InvalidOperationException($"FactoryOutput {outputId} not found.");
+        dbContext.FactoryOutputs.Remove(output);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<FactoryInput> AddFactoryInputAsync(FactoryInput input, CancellationToken cancellationToken = default)
+    {
+        dbContext.FactoryInputs.Add(input);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return input;
+    }
+
+    public async Task UpdateFactoryInputAsync(FactoryInput input, CancellationToken cancellationToken = default)
+    {
+        var existing = await dbContext.FactoryInputs.FindAsync([input.Id], cancellationToken)
+            ?? throw new InvalidOperationException($"FactoryInput {input.Id} not found.");
+        existing.ResourceId = input.ResourceId;
+        existing.AmountPerMinute = input.AmountPerMinute;
+        existing.SourceMineId = input.SourceMineId;
+        existing.SourceFactoryLevelId = input.SourceFactoryLevelId;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteFactoryInputAsync(int inputId, CancellationToken cancellationToken = default)
+    {
+        var input = await dbContext.FactoryInputs.FindAsync([inputId], cancellationToken)
+            ?? throw new InvalidOperationException($"FactoryInput {inputId} not found.");
+        dbContext.FactoryInputs.Remove(input);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 }

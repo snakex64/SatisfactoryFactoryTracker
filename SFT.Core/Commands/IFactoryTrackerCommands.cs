@@ -15,4 +15,12 @@ public interface IFactoryTrackerCommands
     Task<FactoryLevel> AddFactoryLevelAsync(FactoryLevel level, CancellationToken cancellationToken = default);
     Task UpdateFactoryLevelAsync(FactoryLevel level, CancellationToken cancellationToken = default);
     Task DeleteFactoryLevelAsync(int levelId, CancellationToken cancellationToken = default);
+
+    Task<FactoryOutput> AddFactoryOutputAsync(FactoryOutput output, CancellationToken cancellationToken = default);
+    Task UpdateFactoryOutputAsync(FactoryOutput output, CancellationToken cancellationToken = default);
+    Task DeleteFactoryOutputAsync(int outputId, CancellationToken cancellationToken = default);
+
+    Task<FactoryInput> AddFactoryInputAsync(FactoryInput input, CancellationToken cancellationToken = default);
+    Task UpdateFactoryInputAsync(FactoryInput input, CancellationToken cancellationToken = default);
+    Task DeleteFactoryInputAsync(int inputId, CancellationToken cancellationToken = default);
 }

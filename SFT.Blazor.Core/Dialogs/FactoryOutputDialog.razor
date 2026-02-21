@@ -1,0 +1,57 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="isValid">
+            <MudAutocomplete T="Resource" @bind-Value="selectedResource" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3"
+                             SearchFunc="SearchResources" ToStringFunc="@(r => r?.Name ?? string.Empty)" CoerceText="false"
+                             OpenOnFocus="true" MinCharacters="0" data-test-id="output-dialog-resource" />
+            <MudNumericField T="decimal" @bind-Value="amountPerMinute" Label="Amount per Minute" Min="0.01m" Required="true" RequiredError="Amount is required." data-test-id="output-dialog-amount" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" data-test-id="output-dialog-cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" data-test-id="output-dialog-submit">@(Output is null ? "Add" : "Save")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public FactoryOutput? Output { get; set; }
+    [Parameter] public int FactoryLevelId { get; set; }
+    [Parameter] public IReadOnlyList<Resource> Resources { get; set; } = [];
+
+    private MudForm form = null!;
+    private bool isValid;
+    private Resource? selectedResource;
+    private decimal amountPerMinute;
+
+    protected override void OnParametersSet()
+    {
+        if (Output is not null)
+        {
+            selectedResource = Resources.FirstOrDefault(r => r.Id == Output.ResourceId);
+            amountPerMinute = Output.AmountPerMinute;
+        }
+    }
+
+    private Task<IEnumerable<Resource>> SearchResources(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult<IEnumerable<Resource>>(Resources.ToList());
+        return Task.FromResult<IEnumerable<Resource>>(Resources.Where(r => r.Name.Contains(value, StringComparison.OrdinalIgnoreCase)).ToList());
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!isValid || selectedResource is null) return;
+
+        var result = Output is null
+            ? new FactoryOutput { FactoryLevelId = FactoryLevelId, ResourceId = selectedResource.Id, AmountPerMinute = amountPerMinute }
+            : new FactoryOutput { Id = Output.Id, FactoryLevelId = Output.FactoryLevelId, ResourceId = selectedResource.Id, AmountPerMinute = amountPerMinute };
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
