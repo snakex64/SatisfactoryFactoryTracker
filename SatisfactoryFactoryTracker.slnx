@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="agents.md" />
+    <File Path="README.md" />
+  </Folder>
   <Project Path="SFT.AppHost/SFT.AppHost.csproj" />
   <Project Path="SFT.Blazor.Core/SFT.Blazor.Core.csproj" />
   <Project Path="SFT.Blazor.Server/SFT.Blazor.Server.csproj" />
