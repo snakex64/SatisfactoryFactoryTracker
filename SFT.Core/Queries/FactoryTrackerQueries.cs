@@ -30,6 +30,7 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
             .Include(f => f.Levels)
                 .ThenInclude(l => l.Outputs)
                     .ThenInclude(o => o.Resource)
+            .AsSplitQuery()
             .AsNoTracking()
             .OrderBy(f => f.Name)
             .ToListAsync(cancellationToken);

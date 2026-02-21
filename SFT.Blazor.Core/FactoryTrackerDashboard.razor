@@ -32,7 +32,7 @@
     <RowTemplate>
         <MudTd DataLabel="Factory">@context.Name</MudTd>
         <MudTd DataLabel="Description">@context.Description</MudTd>
-        <MudTd DataLabel="Levels">@string.Join(" | ", context.Levels.OrderBy(l => l.Identifier).Select(l => $"{l.Identifier}: IN[{string.Join(", ", l.Inputs.Select(i => $"{i.Resource?.Name}: {i.AmountPerMinute}/min ({(i.SourceMine is not null ? $"Mine {i.SourceMine.Name}" : $"Level {i.SourceFactoryLevel?.Identifier}")})"))}] OUT[{string.Join(", ", l.Outputs.Select(o => $"{o.Resource?.Name}: {o.AmountPerMinute}/min"))}]"))</MudTd>
+        <MudTd DataLabel="Levels">@FormatLevels(context)</MudTd>
     </RowTemplate>
 </MudTable>
 
@@ -53,4 +53,13 @@
             errorMessage = $"Unable to load data from PostgreSQL: {ex.Message}";
         }
     }
+
+    private static string FormatLevels(Factory factory)
+        => string.Join(" | ", factory.Levels.OrderBy(l => l.Identifier).Select(level =>
+            $"{level.Identifier}: IN[{string.Join(", ", level.Inputs.Select(i => $"{i.Resource?.Name}: {i.AmountPerMinute}/min ({FormatInputSource(i)})"))}] OUT[{string.Join(", ", level.Outputs.Select(o => $"{o.Resource?.Name}: {o.AmountPerMinute}/min"))}]"));
+
+    private static string FormatInputSource(FactoryInput input)
+        => input.SourceMine is not null
+            ? $"Mine {input.SourceMine.Name}"
+            : $"Level {input.SourceFactoryLevel?.Identifier}";
 }
