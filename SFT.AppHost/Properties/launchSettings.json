@@ -1,0 +1,17 @@
+{
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://127.0.0.1:15001",
+      "environmentVariables": {
+        "ASPNETCORE_URLS": "http://127.0.0.1:15001",
+        "ASPIRE_ALLOW_UNSECURED_TRANSPORT": "true",
+        "DCP_IP_VERSION_PREFERENCE": "IPv4",
+        "ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL": "http://127.0.0.1:19001",
+        "ASPIRE_RESOURCE_SERVICE_ENDPOINT_URL": "http://127.0.0.1:20001"
+      }
+    }
+  }
+}
