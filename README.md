@@ -19,7 +19,14 @@ SatisfactoryFactoryTracker is a .NET 10 Blazor Server application for tracking S
 - .NET Aspire
 
 ## Getting Started
-1. Ensure Docker is running.
+1. Ensure Docker is installed and running.
+   - Linux: https://docs.docker.com/engine/install/ubuntu/
+   - Windows/macOS: https://docs.docker.com/desktop/
+   - Verify setup:
+     ```bash
+     docker --version
+     docker info
+     ```
 2. Run the Aspire host:
    ```bash
    dotnet run --project SFT.AppHost/SFT.AppHost.csproj
