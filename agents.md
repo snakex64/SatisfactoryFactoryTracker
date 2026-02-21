@@ -1,25 +1,19 @@
-# GitHub Copilot Instructions
+# Agent Notes
 
-## Project Overview
-SatisfactoryFactoryTracker tracks Satisfactory production chains:
-- mines and their ore output rates
-- factories with named levels and their input/output rates
-- resource flow between mines and factory levels
+## Project Structure
 
-## Solution Structure
-- `SFT.Core`: domain entities, EF Core DbContext, and query services
-- `SFT.Blazor.Core`: reusable MudBlazor UI components
-- `SFT.Blazor.Server`: Blazor Server host and app composition
-- `SFT.AppHost`: Aspire app host that starts the app and PostgreSQL container
+### SFT.Blazor.Core — Shared UI Library
+- All **page components** must live in `SFT.Blazor.Core/Pages/` and must have `@page "/route"` as the **first line** of the file.
+- The shared `MainLayout` lives in `SFT.Blazor.Core/Layout/MainLayout.razor`. Navigation links in the app bar should be kept in sync with the pages in `SFT.Blazor.Core/Pages/`.
+- Reusable non-page components (dashboard panels, explorers, dialogs, etc.) live directly in `SFT.Blazor.Core/` or in subdirectories such as `Dialogs/`.
 
-## Tech Stack
-- .NET 10
-- MudBlazor v9
-- EF Core with Npgsql provider
-- PostgreSQL (local container orchestrated by Aspire)
+### SFT.Blazor.Server — Host Project
+- Only contains host-specific wiring: `App.razor`, `Routes.razor`, `ReconnectModal`, `Error.razor`, and `Program.cs`.
+- `Routes.razor` must declare `AdditionalAssemblies` pointing at `SFT.Blazor.Core` so the router can discover all pages.
+- `Program.cs` must call `.AddAdditionalAssemblies(typeof(SFT.Blazor.Core.Pages.Home).Assembly)` on `MapRazorComponents<App>()` for server-side route registration.
 
-## Coding Notes
-- Keep business logic in `SFT.Core`
-- Keep UI components in `SFT.Blazor.Core`
-- Keep hosting/wiring in `SFT.Blazor.Server`
-- Prefer small, focused components and services
+### SFT.Core — Domain & Data
+- Domain models live in `SFT.Core/Domain/`.
+- EF Core DbContext and migrations live in `SFT.Core/Data/`.
+- Query services implement `IFactoryTrackerQueries` in `SFT.Core/Queries/`.
+- Command (write) services implement `IFactoryTrackerCommands` in `SFT.Core/Commands/`.
