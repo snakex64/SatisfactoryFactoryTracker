@@ -1,0 +1,46 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="isValid">
+            <MudTextField @bind-Value="name" Label="Factory Name" Required="true" RequiredError="Name is required." Class="mb-3" />
+            <MudTextField @bind-Value="description" Label="Description" Lines="3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">@(Factory is null ? "Add" : "Save")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public Factory? Factory { get; set; }
+
+    private MudForm form = null!;
+    private bool isValid;
+    private string name = string.Empty;
+    private string description = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (Factory is not null)
+        {
+            name = Factory.Name;
+            description = Factory.Description;
+        }
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!isValid) return;
+
+        var result = Factory is null
+            ? new Factory { Name = name, Description = description }
+            : new Factory { Id = Factory.Id, Name = name, Description = description };
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

@@ -1,0 +1,47 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="isValid">
+            <MudTextField @bind-Value="identifier" Label="Level Name" Required="true" RequiredError="Name is required." Class="mb-3" />
+            <MudTextField @bind-Value="description" Label="Description" Lines="3" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">@(Level is null ? "Add" : "Save")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public FactoryLevel? Level { get; set; }
+    [Parameter] public int FactoryId { get; set; }
+
+    private MudForm form = null!;
+    private bool isValid;
+    private string identifier = string.Empty;
+    private string description = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (Level is not null)
+        {
+            identifier = Level.Identifier;
+            description = Level.Description;
+        }
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!isValid) return;
+
+        var result = Level is null
+            ? new FactoryLevel { FactoryId = FactoryId, Identifier = identifier, Description = description }
+            : new FactoryLevel { Id = Level.Id, FactoryId = Level.FactoryId, Identifier = identifier, Description = description };
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
