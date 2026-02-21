@@ -2,12 +2,8 @@
     <DialogContent>
         <MudForm @ref="form" @bind-IsValid="isValid">
             <MudTextField @bind-Value="name" Label="Mine Name" Required="true" RequiredError="Name is required." Class="mb-3" data-test-id="mine-dialog-name" />
-            <MudSelect @bind-Value="resourceId" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3">
-                @foreach (var resource in Resources)
-                {
-                    <MudSelectItem Value="resource.Id">@resource.Name</MudSelectItem>
-                }
-            </MudSelect>
+            <MudAutocomplete T="Resource" @bind-Value="selectedResource" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3"
+                             SearchFunc="SearchResources" ToStringFunc="@(r => r?.Name ?? string.Empty)" CoerceText="false" />
             <MudNumericField @bind-Value="outputPerMinute" Label="Output per Minute" Min="0m" Required="true" RequiredError="Output is required." />
         </MudForm>
     </DialogContent>
@@ -26,7 +22,7 @@
     private MudForm form = null!;
     private bool isValid;
     private string name = string.Empty;
-    private int resourceId;
+    private Resource? selectedResource;
     private decimal outputPerMinute;
 
     protected override void OnParametersSet()
@@ -34,16 +30,24 @@
         if (Mine is not null)
         {
             name = Mine.Name;
-            resourceId = Mine.ResourceId;
+            selectedResource = Resources.FirstOrDefault(r => r.Id == Mine.ResourceId);
             outputPerMinute = Mine.OutputPerMinute;
         }
+    }
+
+    private Task<IEnumerable<Resource>> SearchResources(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult<IEnumerable<Resource>>(Resources.ToList());
+        return Task.FromResult<IEnumerable<Resource>>(Resources.Where(r => r.Name.Contains(value, StringComparison.OrdinalIgnoreCase)).ToList());
     }
 
     private async Task Submit()
     {
         await form.Validate();
-        if (!isValid) return;
+        if (!isValid || selectedResource is null) return;
 
+        var resourceId = selectedResource.Id;
         var result = Mine is null
             ? new Mine { Name = name, ResourceId = resourceId, OutputPerMinute = outputPerMinute }
             : new Mine { Id = Mine.Id, Name = name, ResourceId = resourceId, OutputPerMinute = outputPerMinute };

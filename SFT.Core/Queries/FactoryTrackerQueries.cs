@@ -44,6 +44,17 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
             .ToListAsync(cancellationToken);
     }
 
+    private static readonly string[] RawResourceCategories = ["mineral", "oil", "water"];
+
+    public async Task<IReadOnlyList<Resource>> GetRawResourcesAsync(CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Resources
+            .Where(r => RawResourceCategories.Contains(r.Category))
+            .AsNoTracking()
+            .OrderBy(r => r.Name)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<ResourceRecipeView>> GetResourceRecipesAsync(CancellationToken cancellationToken = default)
     {
         var recipes = await dbContext.ProductionRecipes
