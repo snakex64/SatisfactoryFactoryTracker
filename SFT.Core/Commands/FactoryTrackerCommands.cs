@@ -31,6 +31,30 @@ public class FactoryTrackerCommands(SatisfactoryDbContext dbContext) : IFactoryT
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<MineOutput> AddMineOutputAsync(MineOutput output, CancellationToken cancellationToken = default)
+    {
+        dbContext.MineOutputs.Add(output);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return output;
+    }
+
+    public async Task UpdateMineOutputAsync(MineOutput output, CancellationToken cancellationToken = default)
+    {
+        var existing = await dbContext.MineOutputs.FindAsync([output.Id], cancellationToken)
+            ?? throw new InvalidOperationException($"MineOutput {output.Id} not found.");
+        existing.ResourceId = output.ResourceId;
+        existing.AmountPerMinute = output.AmountPerMinute;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteMineOutputAsync(int outputId, CancellationToken cancellationToken = default)
+    {
+        var output = await dbContext.MineOutputs.FindAsync([outputId], cancellationToken)
+            ?? throw new InvalidOperationException($"MineOutput {outputId} not found.");
+        dbContext.MineOutputs.Remove(output);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<Factory> AddFactoryAsync(Factory factory, CancellationToken cancellationToken = default)
     {
         dbContext.Factories.Add(factory);

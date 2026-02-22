@@ -1,0 +1,127 @@
+@using SFT.Blazor.Core.Dialogs
+@using SFT.Core.Commands
+@using SFT.Core.Queries
+@inject IFactoryTrackerCommands Commands
+@inject IFactoryTrackerQueries Queries
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+@if (Mine is not null)
+{
+    <MudText Typo="Typo.h5" Class="mb-1">@Mine.Name</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+        Raw resource: @(Mine.Resource?.Name ?? "?") &mdash; @Mine.OutputPerMinute/min extraction rate
+    </MudText>
+
+    <!-- Outputs -->
+    <div class="d-flex align-center mb-2 mt-4">
+        <MudText Typo="Typo.h6" Class="flex-grow-1">Outputs</MudText>
+        <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" Variant="Variant.Outlined" OnClick="OpenAddOutputDialog" data-test-id="add-mine-output-btn">Add Output</MudButton>
+    </div>
+    @if (!Mine.Outputs.Any())
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">No outputs configured. Add an output to specify what this mine delivers.</MudText>
+    }
+    else
+    {
+        <MudTable Items="Mine.Outputs.OrderBy(o => o.Resource?.Name)" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>Resource</MudTh>
+                <MudTh>Amount / min</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Resource?.Name</MudTd>
+                <MudTd>@context.AmountPerMinute</MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit output" OnClick="() => OpenEditOutputDialog(context)" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete output" OnClick="() => DeleteOutput(context)" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+
+@code {
+    [Parameter] public Mine? Mine { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private IReadOnlyList<Resource> _producibleResources = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Mine is not null)
+            _producibleResources = await Queries.GetResourcesProducibleFromAsync(Mine.ResourceId);
+    }
+
+    private async Task OpenAddOutputDialog()
+    {
+        var parameters = new DialogParameters<MineOutputDialog>
+        {
+            { x => x.MineId, Mine!.Id },
+            { x => x.Resources, _producibleResources }
+        };
+        var dialog = await DialogService.ShowAsync<MineOutputDialog>("Add Output", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is MineOutput output)
+        {
+            try
+            {
+                await Commands.AddMineOutputAsync(output);
+                await OnChanged.InvokeAsync();
+                Snackbar.Add("Output added.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error adding output: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditOutputDialog(MineOutput output)
+    {
+        var parameters = new DialogParameters<MineOutputDialog>
+        {
+            { x => x.Output, output },
+            { x => x.Resources, _producibleResources }
+        };
+        var dialog = await DialogService.ShowAsync<MineOutputDialog>("Edit Output", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is MineOutput updated)
+        {
+            try
+            {
+                await Commands.UpdateMineOutputAsync(updated);
+                await OnChanged.InvokeAsync();
+                Snackbar.Add("Output updated.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error updating output: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteOutput(MineOutput output)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Message, $"Are you sure you want to delete the output \"{output.Resource?.Name}\"?" }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Output", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            try
+            {
+                await Commands.DeleteMineOutputAsync(output.Id);
+                await OnChanged.InvokeAsync();
+                Snackbar.Add("Output deleted.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error deleting output: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}

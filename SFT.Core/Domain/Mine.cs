@@ -7,4 +7,5 @@ public class Mine
     public int ResourceId { get; set; }
     public Resource? Resource { get; set; }
     public decimal OutputPerMinute { get; set; }
+    public ICollection<MineOutput> Outputs { get; set; } = [];
 }
