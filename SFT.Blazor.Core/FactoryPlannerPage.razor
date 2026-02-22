@@ -53,6 +53,21 @@
                                             @mine.Resource?.Name &mdash;
                                             <span style="color:@GetCapacityColor(pctUsed); font-weight:600;">@free.ToString("0.##") / @mine.OutputPerMinute.ToString("0.##") free</span>
                                         </div>
+                                        @if (mine.Outputs.Any())
+                                        {
+                                            <div style="padding-left:8px; border-left:2px solid var(--mud-palette-divider); margin-left:2px; margin-top:2px;">
+                                                @foreach (var output in mine.Outputs.OrderBy(o => o.Resource?.Name))
+                                                {
+                                                    var outUsed = GetMineOutputUsedForResource(mine.Id, output.ResourceId);
+                                                    var outFree = output.AmountPerMinute - outUsed;
+                                                    var outPct = output.AmountPerMinute > 0 ? Math.Min(1.0, (double)outUsed / (double)output.AmountPerMinute) : 0.0;
+                                                    <div style="font-size:0.72rem; color:var(--mud-palette-text-secondary);">
+                                                        @output.Resource?.Name &mdash;
+                                                        <span style="color:@GetCapacityColor(outPct); font-weight:600;">@outFree.ToString("0.##") / @output.AmountPerMinute.ToString("0.##") free</span>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
                                     </div>
                                     <span @onclick:stopPropagation="true">
                                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
@@ -122,14 +137,19 @@
                                                     {
                                                         <MudText Typo="Typo.caption" Color="Color.Secondary">@level.Description</MudText>
                                                     }
-                                                    @foreach (var output in level.Outputs.OrderBy(o => o.Resource?.Name))
+                                                    @if (level.Outputs.Any())
                                                     {
-                                                        var outUsed = GetLevelOutputUsedForResource(level.Id, output.ResourceId);
-                                                        var outFree = output.AmountPerMinute - outUsed;
-                                                        var outPct = output.AmountPerMinute > 0 ? Math.Min(1.0, (double)outUsed / (double)output.AmountPerMinute) : 0.0;
-                                                        <div style="font-size:0.72rem; color:var(--mud-palette-text-secondary);">
-                                                            @output.Resource?.Name &mdash;
-                                                            <span style="color:@GetCapacityColor(outPct); font-weight:600;">@outFree.ToString("0.##") / @output.AmountPerMinute.ToString("0.##") free</span>
+                                                        <div style="padding-left:8px; border-left:2px solid var(--mud-palette-divider); margin-left:2px; margin-top:2px;">
+                                                            @foreach (var output in level.Outputs.OrderBy(o => o.Resource?.Name))
+                                                            {
+                                                                var outUsed = GetLevelOutputUsedForResource(level.Id, output.ResourceId);
+                                                                var outFree = output.AmountPerMinute - outUsed;
+                                                                var outPct = output.AmountPerMinute > 0 ? Math.Min(1.0, (double)outUsed / (double)output.AmountPerMinute) : 0.0;
+                                                                <div style="font-size:0.72rem; color:var(--mud-palette-text-secondary);">
+                                                                    @output.Resource?.Name &mdash;
+                                                                    <span style="color:@GetCapacityColor(outPct); font-weight:600;">@outFree.ToString("0.##") / @output.AmountPerMinute.ToString("0.##") free</span>
+                                                                </div>
+                                                            }
                                                         </div>
                                                     }
                                                 </div>
@@ -162,7 +182,7 @@
         <MudPaper Elevation="0" Class="pa-4">
             @if (selectedMine is not null)
             {
-                <MineDetail Mine="selectedMine" UsedPerMinute="@GetMineUsedPerMinute(selectedMine.Id)" OnChanged="OnMineChangedAsync" />
+                <MineDetail Mine="selectedMine" UsedPerMinute="@GetMineUsedPerMinute(selectedMine.Id)" AllLevels="factories.SelectMany(f => f.Levels).ToList()" OnChanged="OnMineChangedAsync" />
             }
             else if (selectedLevel is null)
             {
@@ -469,6 +489,12 @@
 
     private decimal GetMineUsedPerMinute(int mineId) =>
         mines.FirstOrDefault(m => m.Id == mineId)?.Outputs.Sum(o => o.InputAmountPerMinute) ?? 0m;
+
+    private decimal GetMineOutputUsedForResource(int mineId, int resourceId) =>
+        factories.SelectMany(f => f.Levels)
+                 .SelectMany(l => l.Inputs)
+                 .Where(i => i.SourceMineId == mineId && i.ResourceId == resourceId)
+                 .Sum(i => i.AmountPerMinute);
 
     private decimal GetLevelOutputUsedForResource(int levelId, int resourceId) =>
         factories.SelectMany(f => f.Levels)
