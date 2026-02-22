@@ -138,7 +138,7 @@ public class FactoryPlannerTests : PageTest
             new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
 
         // Click the edit button for that mine.
-        var mineRow = Page.Locator(".d-flex.align-center.pl-2.mb-1").Filter(new() { HasText = "Edit Mine Original" });
+        var mineRow = Page.Locator(".mud-treeview-item").Filter(new() { HasText = "Edit Mine Original" });
         await mineRow.Locator("[aria-label='Edit mine']").ClickAsync();
         await Page.Locator("[data-test-id='mine-dialog-name']").WaitForAsync(
             new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5_000 });
