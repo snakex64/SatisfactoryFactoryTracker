@@ -16,6 +16,19 @@ namespace SFT.Core.Data.Migrations
                 type: "integer",
                 nullable: false,
                 defaultValue: 0);
+
+            // Assign sequential 0-based SortIndex values to any pre-existing rows,
+            // partitioned per factory and ordered by Id (insertion order).
+            migrationBuilder.Sql(@"
+                UPDATE ""FactoryLevels"" AS fl
+                SET ""SortIndex"" = sub.rn
+                FROM (
+                    SELECT ""Id"",
+                           ROW_NUMBER() OVER (PARTITION BY ""FactoryId"" ORDER BY ""Id"") - 1 AS rn
+                    FROM ""FactoryLevels""
+                ) AS sub
+                WHERE fl.""Id"" = sub.""Id"";
+            ");
         }
 
         /// <inheritdoc />

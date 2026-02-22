@@ -132,7 +132,7 @@
                                                      Selected="@(selectedLevel?.Id == level.Id)"
                                                      OnClick="@(() => SelectLevel(level))">
                                         <BodyContent>
-                                            <div class="d-flex align-center flex-grow-1" style="min-width:0">
+                                            <div class="d-flex align-center flex-grow-1" style="min-width:0" data-test-id="level-row" data-level-identifier="@level.Identifier">
                                                 <div class="flex-grow-1" style="min-width:0">
                                                     <MudText Typo="Typo.body2">@level.Identifier</MudText>
                                                     @if (!string.IsNullOrWhiteSpace(level.Description))
