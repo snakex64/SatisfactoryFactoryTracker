@@ -4,10 +4,11 @@ using SFT.Core.Domain;
 
 namespace SFT.Core.Queries;
 
-public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTrackerQueries
+public class FactoryTrackerQueries(IDbContextFactory<SatisfactoryDbContext> dbContextFactory) : IFactoryTrackerQueries
 {
     public async Task<IReadOnlyList<Mine>> GetMinesAsync(CancellationToken cancellationToken = default)
     {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         return await dbContext.Mines
             .Include(m => m.Resource)
             .Include(m => m.Outputs)
@@ -19,6 +20,7 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
 
     public async Task<IReadOnlyList<Factory>> GetFactoriesAsync(CancellationToken cancellationToken = default)
     {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         return await dbContext.Factories
             .Include(f => f.Levels)
                 .ThenInclude(l => l.Inputs)
@@ -40,6 +42,7 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
 
     public async Task<IReadOnlyList<Resource>> GetResourcesAsync(CancellationToken cancellationToken = default)
     {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         return await dbContext.Resources
             .AsNoTracking()
             .OrderBy(r => r.Name)
@@ -50,6 +53,7 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
 
     public async Task<IReadOnlyList<Resource>> GetRawResourcesAsync(CancellationToken cancellationToken = default)
     {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         return await dbContext.Resources
             .Where(r => RawResourceCategories.Contains(r.Category))
             .AsNoTracking()
@@ -59,6 +63,7 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
 
     public async Task<IReadOnlyList<Resource>> GetResourcesProducibleFromAsync(int rawResourceId, CancellationToken cancellationToken = default)
     {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         // Returns only resources that are the direct output of a recipe whose inputs include
         // the given raw resource. The raw resource itself is intentionally excluded because
         // mines are expected to output processed goods (e.g. Iron Ingot), not the ore.
@@ -77,6 +82,7 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
 
     public async Task<IReadOnlyList<ResourceRecipeView>> GetResourceRecipesAsync(CancellationToken cancellationToken = default)
     {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var recipes = await dbContext.ProductionRecipes
             .Include(recipe => recipe.Resources)
                 .ThenInclude(rr => rr.Resource)
