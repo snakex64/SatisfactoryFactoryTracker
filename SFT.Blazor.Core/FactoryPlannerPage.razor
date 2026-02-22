@@ -245,6 +245,7 @@
             factories = await Queries.GetFactoriesAsync();
             resources = await Queries.GetRawResourcesAsync();
             allResources = await Queries.GetResourcesAsync();
+            _expandedFactoryIds = factories.Select(f => f.Id).ToHashSet();
             errorMessage = null;
         }
         catch (Exception ex)
