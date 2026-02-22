@@ -7,6 +7,7 @@ public class FactoryLevel
     public Factory? Factory { get; set; }
     public string Identifier { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public int SortIndex { get; set; }
     public ICollection<FactoryInput> Inputs { get; set; } = [];
     public ICollection<FactoryOutput> Outputs { get; set; } = [];
 }

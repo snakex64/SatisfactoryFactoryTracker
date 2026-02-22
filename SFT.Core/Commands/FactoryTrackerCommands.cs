@@ -93,6 +93,11 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
     public async Task<FactoryLevel> AddFactoryLevelAsync(FactoryLevel level, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var maxSortIndex = await dbContext.FactoryLevels
+            .Where(l => l.FactoryId == level.FactoryId)
+            .Select(l => (int?)l.SortIndex)
+            .MaxAsync(cancellationToken);
+        level.SortIndex = (maxSortIndex ?? -1) + 1;
         dbContext.FactoryLevels.Add(level);
         await dbContext.SaveChangesAsync(cancellationToken);
         return level;
@@ -116,6 +121,36 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
         var level = await dbContext.FactoryLevels.FindAsync([levelId], cancellationToken)
             ?? throw new InvalidOperationException($"FactoryLevel {levelId} not found.");
         dbContext.FactoryLevels.Remove(level);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task MoveLevelUpAsync(int levelId, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var level = await dbContext.FactoryLevels.FindAsync([levelId], cancellationToken)
+            ?? throw new InvalidOperationException($"FactoryLevel {levelId} not found.");
+        var predecessor = await dbContext.FactoryLevels
+            .Where(l => l.FactoryId == level.FactoryId && l.SortIndex < level.SortIndex)
+            .OrderByDescending(l => l.SortIndex)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (predecessor is null)
+            return;
+        (predecessor.SortIndex, level.SortIndex) = (level.SortIndex, predecessor.SortIndex);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task MoveLevelDownAsync(int levelId, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var level = await dbContext.FactoryLevels.FindAsync([levelId], cancellationToken)
+            ?? throw new InvalidOperationException($"FactoryLevel {levelId} not found.");
+        var successor = await dbContext.FactoryLevels
+            .Where(l => l.FactoryId == level.FactoryId && l.SortIndex > level.SortIndex)
+            .OrderBy(l => l.SortIndex)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (successor is null)
+            return;
+        (successor.SortIndex, level.SortIndex) = (level.SortIndex, successor.SortIndex);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
