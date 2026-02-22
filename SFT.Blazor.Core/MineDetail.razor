@@ -15,7 +15,7 @@
 
     <MudText Typo="Typo.h5" Class="mb-1">@Mine.Name</MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-        Raw resource: @(Mine.Resource?.Name ?? "?") &mdash; @Mine.OutputPerMinute.ToString("0.##")/min extraction rate
+        Raw resource: @(Mine.Resource?.Name ?? "?") &mdash; @GetNodePurityLabel(Mine.NodePurity) node &mdash; @Mine.OutputPerMinute.ToString("0.##")/min extraction rate
     </MudText>
 
     <!-- Capacity summary -->
@@ -31,6 +31,50 @@
             <span style="color:@capacityColor; font-weight:600;">@free.ToString("0.##") /min</span> free to use
         </MudText>
     </MudPaper>
+
+    <!-- Mining Stations -->
+    <div class="d-flex align-center mb-2 mt-4">
+        <MudText Typo="Typo.h6" Class="flex-grow-1">Mining Stations</MudText>
+        <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" Variant="Variant.Outlined" OnClick="OpenAddStationDialog" data-test-id="add-mining-station-btn">Add Station</MudButton>
+    </div>
+    @if (!Mine.MiningStations.Any())
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">No mining stations configured.</MudText>
+    }
+    else
+    {
+        var totalStations = Mine.MiningStations.Sum(s => s.Quantity);
+        <MudTable Items="Mine.MiningStations.OrderBy(s => s.MinerMk).ThenBy(s => s.OverclockLevel)" Dense="true" Hover="true" Class="mb-4">
+            <HeaderContent>
+                <MudTh>Miner</MudTh>
+                <MudTh>Overclock</MudTh>
+                <MudTh>Qty</MudTh>
+                <MudTh>Output/min (each)</MudTh>
+                <MudTh>Output/min (total)</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                @{
+                    var perUnit = new MiningStation { MinerMk = context.MinerMk, OverclockLevel = context.OverclockLevel, Quantity = 1 }.ComputeOutputPerMinute(Mine.NodePurity);
+                    var perGroup = context.ComputeOutputPerMinute(Mine.NodePurity);
+                }
+                <MudTd>@GetMinerMkLabel(context.MinerMk)</MudTd>
+                <MudTd>@GetOverclockLabel(context.OverclockLevel)</MudTd>
+                <MudTd>@context.Quantity</MudTd>
+                <MudTd>@perUnit.ToString("0.##")</MudTd>
+                <MudTd><strong>@perGroup.ToString("0.##")</strong></MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit station" OnClick="() => OpenEditStationDialog(context)" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete station" OnClick="() => DeleteStation(context)" />
+                </MudTd>
+            </RowTemplate>
+            <FooterContent>
+                <MudTd colspan="6">
+                    <MudText Typo="Typo.caption">Total stations: @totalStations &mdash; Total output: @Mine.OutputPerMinute.ToString("0.##") /min</MudText>
+                </MudTd>
+            </FooterContent>
+        </MudTable>
+    }
 
     <!-- Outputs -->
     <div class="d-flex align-center mb-2 mt-4">
@@ -90,6 +134,111 @@
             .SelectMany(l => l.Inputs)
             .Where(i => i.SourceMineId == Mine.Id && i.ResourceId == resourceId)
             .Sum(i => i.AmountPerMinute);
+
+    private static string GetMinerMkLabel(int mk) => mk switch
+    {
+        2 => "MK2",
+        3 => "MK3",
+        _ => "MK1"
+    };
+
+    private static string GetNodePurityLabel(int purity) => purity switch
+    {
+        0 => "Impure",
+        2 => "Pure",
+        _ => "Normal"
+    };
+
+    private static string GetOverclockLabel(int level) => level switch
+    {
+        0 => "No Overclock",
+        1 => "+1 Overclock",
+        2 => "+2 Overclocks",
+        3 => "+3 Overclocks",
+        _ => $"+{level} Overclocks"
+    };
+
+    private async Task OpenAddStationDialog()
+    {
+        var parameters = new DialogParameters<MiningStationDialog>
+        {
+            { x => x.MineId, Mine!.Id },
+            { x => x.NodePurity, Mine!.NodePurity }
+        };
+        var dialog = await DialogService.ShowAsync<MiningStationDialog>("Add Mining Station", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is MiningStation station)
+        {
+            if (Mine!.MiningStations.Any(s => s.MinerMk == station.MinerMk && s.OverclockLevel == station.OverclockLevel))
+            {
+                Snackbar.Add("A mining station with this miner type and overclock level already exists for this mine.", Severity.Warning);
+                return;
+            }
+            try
+            {
+                await Commands.AddMiningStationAsync(station);
+                await OnChanged.InvokeAsync();
+                Snackbar.Add("Mining station added.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error adding mining station: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditStationDialog(MiningStation station)
+    {
+        var parameters = new DialogParameters<MiningStationDialog>
+        {
+            { x => x.Station, station },
+            { x => x.MineId, Mine!.Id },
+            { x => x.NodePurity, Mine!.NodePurity }
+        };
+        var dialog = await DialogService.ShowAsync<MiningStationDialog>("Edit Mining Station", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled && result.Data is MiningStation updated)
+        {
+            if (Mine!.MiningStations.Any(s => s.MinerMk == updated.MinerMk && s.OverclockLevel == updated.OverclockLevel && s.Id != updated.Id))
+            {
+                Snackbar.Add("A mining station with this miner type and overclock level already exists for this mine.", Severity.Warning);
+                return;
+            }
+            try
+            {
+                await Commands.UpdateMiningStationAsync(updated);
+                await OnChanged.InvokeAsync();
+                Snackbar.Add("Mining station updated.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error updating mining station: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task DeleteStation(MiningStation station)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.Message, $"Are you sure you want to delete the {GetMinerMkLabel(station.MinerMk)} {GetOverclockLabel(station.OverclockLevel)} station (x{station.Quantity})?" }
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Mining Station", parameters);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            try
+            {
+                await Commands.DeleteMiningStationAsync(station.Id);
+                await OnChanged.InvokeAsync();
+                Snackbar.Add("Mining station deleted.", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error deleting mining station: {ex.Message}", Severity.Error);
+            }
+        }
+    }
 
     private static string GetCapacityColor(double pct) => pct switch
     {

@@ -12,6 +12,10 @@ public interface IFactoryTrackerCommands
     Task UpdateMineOutputAsync(MineOutput output, CancellationToken cancellationToken = default);
     Task DeleteMineOutputAsync(int outputId, CancellationToken cancellationToken = default);
 
+    Task<MiningStation> AddMiningStationAsync(MiningStation station, CancellationToken cancellationToken = default);
+    Task UpdateMiningStationAsync(MiningStation station, CancellationToken cancellationToken = default);
+    Task DeleteMiningStationAsync(int stationId, CancellationToken cancellationToken = default);
+
     Task<Factory> AddFactoryAsync(Factory factory, CancellationToken cancellationToken = default);
     Task UpdateFactoryAsync(Factory factory, CancellationToken cancellationToken = default);
     Task DeleteFactoryAsync(int factoryId, CancellationToken cancellationToken = default);
