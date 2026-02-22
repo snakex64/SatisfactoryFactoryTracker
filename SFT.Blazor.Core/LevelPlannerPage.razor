@@ -1,0 +1,263 @@
+@using SFT.Core.Queries
+@inject IFactoryTrackerQueries Queries
+
+@* Marker element present only after the first interactive (client-side) render.
+   OnAfterRender is not called during static SSR, so this element signals to
+   Playwright tests that the Blazor circuit is connected and events are wired. *@
+@if (_isInteractive)
+{
+    <span id="level-planner-interactive" aria-hidden="true" style="display:none"></span>
+}
+
+<MudText Typo="Typo.h4" Class="mb-4">Level Planner</MudText>
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
+{
+    <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">@_errorMessage</MudAlert>
+}
+
+<MudPaper Elevation="2" Class="pa-4 mb-4">
+    <MudText Typo="Typo.h6" Class="mb-3">Configure Planned Output</MudText>
+    <MudGrid>
+        <MudItem xs="12" md="3">
+            <MudSelect T="Factory" Value="_selectedFactory" ValueChanged="OnFactoryChanged"
+                       Label="Factory" ToStringFunc="@(f => f?.Name ?? string.Empty)"
+                       AnchorOrigin="Origin.BottomLeft" data-test-id="level-planner-factory">
+                @foreach (var factory in _factories)
+                {
+                    <MudSelectItem Value="factory">@factory.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudAutocomplete T="Resource" Value="_selectedResource" ValueChanged="OnResourceChanged"
+                             Label="Output Resource"
+                             SearchFunc="SearchResources"
+                             ToStringFunc="@(r => r?.Name ?? string.Empty)"
+                             OpenOnFocus="true" MinCharacters="0" CoerceText="false"
+                             data-test-id="level-planner-resource" />
+        </MudItem>
+        <MudItem xs="12" md="2">
+            <MudNumericField T="decimal" Value="_amountPerMinute" ValueChanged="OnAmountChanged"
+                             Label="Amount / min" Min="0.01m"
+                             data-test-id="level-planner-amount" />
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudSelect T="RecipeView" Value="_selectedRecipe" ValueChanged="OnRecipeChanged"
+                       Label="Recipe" ToStringFunc="@(r => r?.RecipeName ?? string.Empty)"
+                       Disabled="@(_selectedResource is null || _availableRecipes.Count == 0)"
+                       AnchorOrigin="Origin.BottomLeft"
+                       data-test-id="level-planner-recipe">
+                @foreach (var recipe in _availableRecipes)
+                {
+                    <MudSelectItem Value="recipe">@recipe.RecipeName (@recipe.AmountPerMinute.ToString("0.##") /min per machine)</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (_requirements.Any())
+{
+    <MudText Typo="Typo.h6" Class="mb-3">Required Inputs</MudText>
+
+    @foreach (var req in _requirements)
+    {
+        var totalAvailable = req.AvailableSources.Sum(s => s.FreeCapacity);
+        var isSufficient = totalAvailable >= req.RequiredPerMinute;
+        var statusColor = isSufficient ? Color.Success : Color.Warning;
+        var statusIcon = isSufficient ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Warning;
+        var statusText = isSufficient ? "Sufficient capacity available" : "Insufficient — new production needed";
+
+        <MudPaper Elevation="1" Class="pa-3 mb-3">
+            <div class="d-flex align-center flex-wrap mb-2" style="gap:8px;">
+                <MudIcon Icon="@statusIcon" Color="@statusColor" />
+                <MudText Typo="Typo.subtitle1" Style="font-weight:600;">@req.ResourceName</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @req.RequiredPerMinute.ToString("0.##") / min required &mdash; @totalAvailable.ToString("0.##") / min available
+                </MudText>
+                <MudSpacer />
+                <MudChip T="string" Color="@statusColor" Size="Size.Small">@statusText</MudChip>
+            </div>
+
+            @if (req.AvailableSources.Any())
+            {
+                <MudTable Items="req.AvailableSources" Dense="true" Hover="false" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Source</MudTh>
+                        <MudTh>Type</MudTh>
+                        <MudTh>Free / min</MudTh>
+                        <MudTh>Total / min</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudIcon Icon="@(context.SourceType == "Mine" ? Icons.Material.Filled.Terrain : Icons.Material.Filled.Factory)"
+                                     Size="Size.Small" Class="mr-1" Style="vertical-align:middle;" />
+                            @context.Label
+                        </MudTd>
+                        <MudTd>@context.SourceType</MudTd>
+                        <MudTd>
+                            <span style="color:@GetFreeCapacityColor(context.FreeCapacity, req.RequiredPerMinute); font-weight:600;">
+                                @context.FreeCapacity.ToString("0.##")
+                            </span>
+                        </MudTd>
+                        <MudTd>@context.TotalCapacity.ToString("0.##")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Error">
+                    No existing production found. You will need to create a new mine or factory level for this resource.
+                </MudText>
+            }
+        </MudPaper>
+    }
+}
+else if (_selectedRecipe is not null && _amountPerMinute > 0)
+{
+    <MudAlert Severity="Severity.Info">This recipe has no inputs — it produces resources without consuming others.</MudAlert>
+}
+else if (_selectedResource is not null && _availableRecipes.Count == 0)
+{
+    <MudAlert Severity="Severity.Warning">No recipes found that produce @_selectedResource.Name.</MudAlert>
+}
+
+@code {
+    private IReadOnlyList<Factory> _factories = [];
+    private IReadOnlyList<Mine> _mines = [];
+    private IReadOnlyList<Resource> _allResources = [];
+    private IReadOnlyList<ResourceRecipeView> _resourceRecipes = [];
+
+    private Factory? _selectedFactory;
+    private Resource? _selectedResource;
+    private decimal _amountPerMinute;
+    private RecipeView? _selectedRecipe;
+    private IReadOnlyList<RecipeView> _availableRecipes = [];
+
+    private List<ResourceRequirement> _requirements = [];
+    private string? _errorMessage;
+    private bool _isInteractive;
+
+    private sealed record AvailableSource(string Label, string SourceType, decimal FreeCapacity, decimal TotalCapacity);
+    private sealed record ResourceRequirement(string ResourceName, decimal RequiredPerMinute, List<AvailableSource> AvailableSources);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _factories = await Queries.GetFactoriesAsync();
+            _mines = await Queries.GetMinesAsync();
+            _allResources = await Queries.GetResourcesAsync();
+            _resourceRecipes = await Queries.GetResourceRecipesAsync();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Unable to load data: {ex.Message}";
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isInteractive = true;
+            StateHasChanged();
+        }
+    }
+
+    private void OnFactoryChanged(Factory? factory)
+    {
+        _selectedFactory = factory;
+    }
+
+    private void OnResourceChanged(Resource? resource)
+    {
+        _selectedResource = resource;
+        _selectedRecipe = null;
+        _availableRecipes = resource is null
+            ? []
+            : _resourceRecipes.FirstOrDefault(r => r.ResourceName == resource.Name)?.ProducedBy ?? [];
+        if (_availableRecipes.Count == 1)
+            _selectedRecipe = _availableRecipes[0];
+        Analyze();
+    }
+
+    private void OnAmountChanged(decimal amount)
+    {
+        _amountPerMinute = amount;
+        Analyze();
+    }
+
+    private void OnRecipeChanged(RecipeView? recipe)
+    {
+        _selectedRecipe = recipe;
+        Analyze();
+    }
+
+    private Task<IEnumerable<Resource>> SearchResources(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult<IEnumerable<Resource>>(_allResources);
+        return Task.FromResult<IEnumerable<Resource>>(
+            _allResources.Where(r => r.Name.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private void Analyze()
+    {
+        _requirements = [];
+        if (_selectedRecipe is null || _amountPerMinute <= 0 || _selectedRecipe.Amount <= 0) return;
+
+        var allLevels = _factories.SelectMany(f => f.Levels).ToList();
+
+        foreach (var input in _selectedRecipe.Inputs)
+        {
+            // Required per minute = inputAmountPerCraft * desiredOutput / outputAmountPerCraft
+            var requiredPerMinute = Math.Round(input.Amount * _amountPerMinute / _selectedRecipe.Amount, 4);
+            if (requiredPerMinute <= 0) continue;
+
+            var resource = _allResources.FirstOrDefault(r => r.Name == input.ResourceName);
+            var sources = new List<AvailableSource>();
+
+            // Check mine outputs
+            foreach (var mine in _mines)
+            {
+                foreach (var mineOutput in mine.Outputs)
+                {
+                    if (resource is not null && mineOutput.ResourceId != resource.Id) continue;
+                    if (resource is null && mineOutput.Resource?.Name != input.ResourceName) continue;
+
+                    var used = allLevels
+                        .SelectMany(l => l.Inputs)
+                        .Where(i => i.SourceMineId == mine.Id && i.ResourceId == mineOutput.ResourceId)
+                        .Sum(i => i.AmountPerMinute);
+                    var free = Math.Max(0m, mineOutput.AmountPerMinute - used);
+                    sources.Add(new AvailableSource(mine.Name, "Mine", free, mineOutput.AmountPerMinute));
+                }
+            }
+
+            // Check factory level outputs
+            foreach (var level in allLevels)
+            {
+                foreach (var levelOutput in level.Outputs)
+                {
+                    if (resource is not null && levelOutput.ResourceId != resource.Id) continue;
+                    if (resource is null && levelOutput.Resource?.Name != input.ResourceName) continue;
+
+                    var used = allLevels
+                        .SelectMany(l => l.Inputs)
+                        .Where(i => i.SourceFactoryLevelId == level.Id && i.ResourceId == levelOutput.ResourceId)
+                        .Sum(i => i.AmountPerMinute);
+                    var free = Math.Max(0m, levelOutput.AmountPerMinute - used);
+                    var label = $"{level.Factory?.Name} / {level.Identifier}";
+                    sources.Add(new AvailableSource(label, "Factory Level", free, levelOutput.AmountPerMinute));
+                }
+            }
+
+            _requirements.Add(new ResourceRequirement(input.ResourceName, requiredPerMinute, sources));
+        }
+    }
+
+    private static string GetFreeCapacityColor(decimal freeCapacity, decimal required) =>
+        freeCapacity >= required ? "var(--mud-palette-success)" : "var(--mud-palette-warning)";
+}
