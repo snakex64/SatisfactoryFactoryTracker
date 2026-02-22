@@ -1,7 +1,7 @@
 <MudDialog>
     <DialogContent>
         <MudForm @ref="form" @bind-IsValid="isValid">
-            <MudAutocomplete T="Resource" @bind-Value="selectedResource" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3"
+            <MudAutocomplete T="Resource" Value="selectedResource" ValueChanged="OnResourceChanged" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3"
                              SearchFunc="SearchResources" ToStringFunc="@(r => r?.Name ?? string.Empty)" CoerceText="false"
                              OpenOnFocus="true" MinCharacters="0" data-test-id="input-dialog-resource" />
             <MudNumericField T="decimal" @bind-Value="amountPerMinute" Label="Amount per Minute" Min="0.01m" Required="true" RequiredError="Amount is required." Class="mb-3" data-test-id="input-dialog-amount" />
@@ -14,7 +14,7 @@
                 <MudSelect T="Mine" @bind-Value="selectedMine" Label="Mine" Required="true" RequiredError="Mine is required."
                            ToStringFunc="@(m => m is null ? string.Empty : $"{m.Name} ({m.Resource?.Name ?? "?"}, {m.OutputPerMinute}/min)")"
                            data-test-id="input-dialog-mine">
-                    @foreach (var mine in Mines)
+                    @foreach (var mine in FilteredMines)
                     {
                         <MudSelectItem Value="mine">@mine.Name (@(mine.Resource?.Name ?? "?"), @mine.OutputPerMinute/min)</MudSelectItem>
                     }
@@ -25,7 +25,7 @@
                 <MudSelect T="FactoryLevel" @bind-Value="selectedFactoryLevel" Label="Factory Level" Required="true" RequiredError="Factory Level is required."
                            ToStringFunc="@(l => l is null ? string.Empty : $"{l.Factory?.Name} / {l.Identifier}")"
                            data-test-id="input-dialog-factory-level">
-                    @foreach (var level in AllLevels)
+                    @foreach (var level in FilteredLevels)
                     {
                         <MudSelectItem Value="level">@level.Factory?.Name / @level.Identifier</MudSelectItem>
                     }
@@ -55,6 +55,21 @@
     private string sourceType = "Mine";
     private Mine? selectedMine;
     private FactoryLevel? selectedFactoryLevel;
+    private IReadOnlyList<Mine> _filteredMines = [];
+    private IReadOnlyList<FactoryLevel> _filteredLevels = [];
+
+    private IReadOnlyList<Mine> FilteredMines => _filteredMines;
+    private IReadOnlyList<FactoryLevel> FilteredLevels => _filteredLevels;
+
+    private void UpdateFilteredSources()
+    {
+        _filteredMines = selectedResource is null
+            ? []
+            : Mines.Where(m => m.Outputs.Any(o => o.ResourceId == selectedResource.Id)).ToList();
+        _filteredLevels = selectedResource is null
+            ? []
+            : AllLevels.Where(l => l.Outputs.Any(o => o.ResourceId == selectedResource.Id)).ToList();
+    }
 
     protected override void OnParametersSet()
     {
@@ -62,6 +77,7 @@
         {
             selectedResource = Resources.FirstOrDefault(r => r.Id == Input.ResourceId);
             amountPerMinute = Input.AmountPerMinute;
+            UpdateFilteredSources();
             if (Input.SourceMineId is not null)
             {
                 sourceType = "Mine";
@@ -80,6 +96,17 @@
         if (string.IsNullOrEmpty(value))
             return Task.FromResult<IEnumerable<Resource>>(Resources.ToList());
         return Task.FromResult<IEnumerable<Resource>>(Resources.Where(r => r.Name.Contains(value, StringComparison.OrdinalIgnoreCase)).ToList());
+    }
+
+    private void OnResourceChanged(Resource? resource)
+    {
+        selectedResource = resource;
+        selectedMine = null;
+        selectedFactoryLevel = null;
+        UpdateFilteredSources();
+
+        if (resource is not null)
+            sourceType = _filteredMines.Any() ? "Mine" : "FactoryLevel";
     }
 
     private async Task Submit()
