@@ -1,5 +1,6 @@
 /.vs
 **/bin/
 **/bin\*/
+**/bin[/\\]*
 **/obj/
 /SFT.Blazor.Server/SFT.Blazor.Server.csproj.user

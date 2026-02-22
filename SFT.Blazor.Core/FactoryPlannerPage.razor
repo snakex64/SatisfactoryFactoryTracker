@@ -458,10 +458,7 @@
     }
 
     private decimal GetMineUsedPerMinute(int mineId) =>
-        factories.SelectMany(f => f.Levels)
-                 .SelectMany(l => l.Inputs)
-                 .Where(i => i.SourceMineId == mineId)
-                 .Sum(i => i.AmountPerMinute);
+        mines.FirstOrDefault(m => m.Id == mineId)?.Outputs.Sum(o => o.InputAmountPerMinute) ?? 0m;
 
     private static string GetCapacityColor(double pct) => pct switch
     {
