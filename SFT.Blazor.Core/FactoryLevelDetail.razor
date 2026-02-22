@@ -159,10 +159,12 @@
     // Output dialogs
     private async Task OpenAddOutputDialog()
     {
+        var usedResourceIds = Level!.Outputs.Select(o => o.ResourceId).ToHashSet();
+        var availableResources = AllResources.Where(r => !usedResourceIds.Contains(r.Id)).ToList();
         var parameters = new DialogParameters<FactoryOutputDialog>
         {
             { x => x.FactoryLevelId, Level!.Id },
-            { x => x.Resources, AllResources }
+            { x => x.Resources, availableResources }
         };
         var dialog = await DialogService.ShowAsync<FactoryOutputDialog>("Add Output", parameters);
         var result = await dialog.Result;
@@ -188,10 +190,12 @@
 
     private async Task OpenEditOutputDialog(FactoryOutput output)
     {
+        var usedResourceIds = Level!.Outputs.Where(o => o.Id != output.Id).Select(o => o.ResourceId).ToHashSet();
+        var availableResources = AllResources.Where(r => !usedResourceIds.Contains(r.Id)).ToList();
         var parameters = new DialogParameters<FactoryOutputDialog>
         {
             { x => x.Output, output },
-            { x => x.Resources, AllResources }
+            { x => x.Resources, availableResources }
         };
         var dialog = await DialogService.ShowAsync<FactoryOutputDialog>("Edit Output", parameters);
         var result = await dialog.Result;
@@ -241,10 +245,12 @@
     // Input dialogs
     private async Task OpenAddInputDialog()
     {
+        var usedResourceIds = Level!.Inputs.Select(i => i.ResourceId).ToHashSet();
+        var availableResources = AllResources.Where(r => !usedResourceIds.Contains(r.Id)).ToList();
         var parameters = new DialogParameters<FactoryInputDialog>
         {
             { x => x.FactoryLevelId, Level!.Id },
-            { x => x.Resources, AllResources },
+            { x => x.Resources, availableResources },
             { x => x.Mines, AllMines },
             { x => x.AllLevels, OtherLevels }
         };
@@ -272,10 +278,12 @@
 
     private async Task OpenEditInputDialog(FactoryInput input)
     {
+        var usedResourceIds = Level!.Inputs.Where(i => i.Id != input.Id).Select(i => i.ResourceId).ToHashSet();
+        var availableResources = AllResources.Where(r => !usedResourceIds.Contains(r.Id)).ToList();
         var parameters = new DialogParameters<FactoryInputDialog>
         {
             { x => x.Input, input },
-            { x => x.Resources, AllResources },
+            { x => x.Resources, availableResources },
             { x => x.Mines, AllMines },
             { x => x.AllLevels, OtherLevels }
         };

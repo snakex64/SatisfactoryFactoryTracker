@@ -111,18 +111,32 @@
             _producibleResources = await Queries.GetResourcesProducibleFromAsync(Mine.ResourceId);
     }
 
+    private IReadOnlyList<Resource> GetAvailableResources(int? excludeOutputId = null)
+    {
+        var usedResourceIds = Mine!.Outputs
+            .Where(o => excludeOutputId == null || o.Id != excludeOutputId)
+            .Select(o => o.ResourceId)
+            .ToHashSet();
+        return _producibleResources.Where(r => !usedResourceIds.Contains(r.Id)).ToList();
+    }
+
     private async Task OpenAddOutputDialog()
     {
         var parameters = new DialogParameters<MineOutputDialog>
         {
             { x => x.MineId, Mine!.Id },
             { x => x.MineResourceId, Mine!.ResourceId },
-            { x => x.Resources, _producibleResources }
+            { x => x.Resources, GetAvailableResources() }
         };
         var dialog = await DialogService.ShowAsync<MineOutputDialog>("Add Output", parameters);
         var result = await dialog.Result;
         if (!result!.Canceled && result.Data is MineOutput output)
         {
+            if (Mine!.Outputs.Any(o => o.ResourceId == output.ResourceId))
+            {
+                Snackbar.Add("This resource is already added as an output for this mine.", Severity.Warning);
+                return;
+            }
             try
             {
                 await Commands.AddMineOutputAsync(output);
@@ -142,12 +156,17 @@
         {
             { x => x.Output, output },
             { x => x.MineResourceId, Mine!.ResourceId },
-            { x => x.Resources, _producibleResources }
+            { x => x.Resources, GetAvailableResources(output.Id) }
         };
         var dialog = await DialogService.ShowAsync<MineOutputDialog>("Edit Output", parameters);
         var result = await dialog.Result;
         if (!result!.Canceled && result.Data is MineOutput updated)
         {
+            if (Mine!.Outputs.Any(o => o.ResourceId == updated.ResourceId && o.Id != updated.Id))
+            {
+                Snackbar.Add("This resource is already added as an output for this mine.", Severity.Warning);
+                return;
+            }
             try
             {
                 await Commands.UpdateMineOutputAsync(updated);

@@ -37,6 +37,10 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
             .HasForeignKey(o => o.ResourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<MineOutput>()
+            .HasIndex(o => new { o.MineId, o.ResourceId })
+            .IsUnique();
+
         modelBuilder.Entity<FactoryLevel>()
             .HasOne(l => l.Factory)
             .WithMany(f => f.Levels)

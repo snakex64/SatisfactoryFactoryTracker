@@ -37,6 +37,10 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
     public async Task<MineOutput> AddMineOutputAsync(MineOutput output, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var duplicate = await dbContext.MineOutputs
+            .AnyAsync(o => o.MineId == output.MineId && o.ResourceId == output.ResourceId, cancellationToken);
+        if (duplicate)
+            throw new InvalidOperationException("This resource is already added as an output for this mine.");
         dbContext.MineOutputs.Add(output);
         await dbContext.SaveChangesAsync(cancellationToken);
         return output;
@@ -47,6 +51,10 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var existing = await dbContext.MineOutputs.FindAsync([output.Id], cancellationToken)
             ?? throw new InvalidOperationException($"MineOutput {output.Id} not found.");
+        var duplicate = await dbContext.MineOutputs
+            .AnyAsync(o => o.MineId == existing.MineId && o.ResourceId == output.ResourceId && o.Id != output.Id, cancellationToken);
+        if (duplicate)
+            throw new InvalidOperationException("This resource is already added as an output for this mine.");
         existing.ResourceId = output.ResourceId;
         existing.AmountPerMinute = output.AmountPerMinute;
         existing.RecipeKeyName = output.RecipeKeyName;
