@@ -183,4 +183,72 @@ public class FactoryPlannerTests : PageTest
         await Expect(Page.GetByText("Copper Ore", new() { Exact = true }))
             .ToBeHiddenAsync(new LocatorAssertionsToBeHiddenOptions { Timeout = 5_000 });
     }
+
+    [Test]
+    public async Task LevelMoving_MoveUpButton_ReordersLevels()
+    {
+        await GotoFactoryPlannerAsync();
+
+        // Create a factory for this test.
+        await Page.Locator("[data-test-id='add-factory-btn']").ClickAsync();
+        await Page.Locator("[data-test-id='factory-dialog-name']").WaitForAsync(
+            new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5_000 });
+        await Page.Locator("[data-test-id='factory-dialog-name']").FillAsync("Level Move Test Factory");
+        await Page.Locator("[data-test-id='factory-dialog-submit']").ClickAsync();
+        await Expect(Page.GetByText("Level Move Test Factory")).ToBeVisibleAsync(
+            new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
+
+        // Expand the factory tree item to reveal its children (including "Add level").
+        // The toggle button lives inside `.mud-treeview-item-arrow`.
+        var factoryItem = Page.Locator(".mud-treeview-item").Filter(
+            new LocatorFilterOptions { Has = Page.Locator(".mud-treeview-item-content").Filter(new() { HasText = "Level Move Test Factory" }) }).First;
+        await factoryItem.Locator(".mud-treeview-item-arrow button").ClickAsync();
+        await Expect(factoryItem.GetByText("Add level")).ToBeVisibleAsync(
+            new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
+
+        // Add first level "Alpha".
+        await factoryItem.GetByText("Add level").ClickAsync();
+        await Page.Locator("[data-test-id='level-dialog-identifier']").WaitForAsync(
+            new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5_000 });
+        await Page.Locator("[data-test-id='level-dialog-identifier']").FillAsync("Alpha");
+        await Page.Locator("[data-test-id='level-dialog-submit']").ClickAsync();
+        await Expect(Page.GetByText("Alpha")).ToBeVisibleAsync(
+            new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
+
+        // Add second level "Beta".
+        await factoryItem.GetByText("Add level").ClickAsync();
+        await Page.Locator("[data-test-id='level-dialog-identifier']").WaitForAsync(
+            new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5_000 });
+        await Page.Locator("[data-test-id='level-dialog-identifier']").FillAsync("Beta");
+        await Page.Locator("[data-test-id='level-dialog-submit']").ClickAsync();
+        await Expect(Page.GetByText("Beta")).ToBeVisibleAsync(
+            new LocatorAssertionsToBeVisibleOptions { Timeout = 5_000 });
+
+        // Verify initial order: Alpha first (SortIndex 0), Beta second (SortIndex 1).
+        var levelRows = Page.Locator("[data-test-id='level-row']");
+        await Expect(levelRows.Nth(0)).ToHaveAttributeAsync("data-level-identifier", "Alpha",
+            new LocatorAssertionsToHaveAttributeOptions { Timeout = 5_000 });
+        await Expect(levelRows.Nth(1)).ToHaveAttributeAsync("data-level-identifier", "Beta",
+            new LocatorAssertionsToHaveAttributeOptions { Timeout = 5_000 });
+
+        // Alpha is at index 0 so its "Move level up" button must be disabled.
+        await Expect(levelRows.Nth(0).Locator("[aria-label='Move level up']"))
+            .ToBeDisabledAsync(new LocatorAssertionsToBeDisabledOptions { Timeout = 5_000 });
+        // Beta is at index 1 (last) so its "Move level down" button must be disabled.
+        await Expect(levelRows.Nth(1).Locator("[aria-label='Move level down']"))
+            .ToBeDisabledAsync(new LocatorAssertionsToBeDisabledOptions { Timeout = 5_000 });
+
+        // Click "Move level up" on Beta (currently at index 1).
+        await levelRows.Nth(1).Locator("[aria-label='Move level up']").ClickAsync();
+
+        // After the move, Beta (SortIndex 0) must be first and Alpha (SortIndex 1) second.
+        await Expect(levelRows.Nth(0)).ToHaveAttributeAsync("data-level-identifier", "Beta",
+            new LocatorAssertionsToHaveAttributeOptions { Timeout = 5_000 });
+        await Expect(levelRows.Nth(1)).ToHaveAttributeAsync("data-level-identifier", "Alpha",
+            new LocatorAssertionsToHaveAttributeOptions { Timeout = 5_000 });
+
+        // Beta is now at index 0 → its "Move level up" button must be disabled.
+        await Expect(levelRows.Nth(0).Locator("[aria-label='Move level up']"))
+            .ToBeDisabledAsync(new LocatorAssertionsToBeDisabledOptions { Timeout = 5_000 });
+    }
 }

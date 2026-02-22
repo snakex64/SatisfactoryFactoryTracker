@@ -124,13 +124,15 @@
                                 </div>
                             </BodyContent>
                             <ChildContent>
-                                @foreach (var level in factory.Levels.OrderBy(l => l.Identifier))
+                                @{ var orderedLevels = factory.Levels.OrderBy(l => l.SortIndex).ToList(); }
+                                @foreach (var level in orderedLevels)
                                 {
+                                    var levelIndex = orderedLevels.IndexOf(level);
                                     <MudTreeViewItem T="object" Value="@((object)level)" CanExpand="false"
                                                      Selected="@(selectedLevel?.Id == level.Id)"
                                                      OnClick="@(() => SelectLevel(level))">
                                         <BodyContent>
-                                            <div class="d-flex align-center flex-grow-1" style="min-width:0">
+                                            <div class="d-flex align-center flex-grow-1" style="min-width:0" data-test-id="level-row" data-level-identifier="@level.Identifier">
                                                 <div class="flex-grow-1" style="min-width:0">
                                                     <MudText Typo="Typo.body2">@level.Identifier</MudText>
                                                     @if (!string.IsNullOrWhiteSpace(level.Description))
@@ -154,6 +156,14 @@
                                                     }
                                                 </div>
                                                 <span @onclick:stopPropagation="true">
+                                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small"
+                                                                   aria-label="Move level up"
+                                                                   Disabled="@(levelIndex == 0)"
+                                                                   OnClick="@(() => MoveLevelUp(level))" />
+                                                    <MudIconButton Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small"
+                                                                   aria-label="Move level down"
+                                                                   Disabled="@(levelIndex == orderedLevels.Count - 1)"
+                                                                   OnClick="@(() => MoveLevelDown(level))" />
                                                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
                                                                    aria-label="Edit level"
                                                                    OnClick="@(() => OpenEditLevelDialog(level))" />
@@ -484,6 +494,32 @@
             {
                 Snackbar.Add($"Error deleting level: {ex.Message}", Severity.Error);
             }
+        }
+    }
+
+    private async Task MoveLevelUp(FactoryLevel level)
+    {
+        try
+        {
+            await Commands.MoveLevelUpAsync(level.Id);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error moving level: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task MoveLevelDown(FactoryLevel level)
+    {
+        try
+        {
+            await Commands.MoveLevelDownAsync(level.Id);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error moving level: {ex.Message}", Severity.Error);
         }
     }
 
