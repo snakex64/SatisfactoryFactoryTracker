@@ -15,7 +15,7 @@
 
     <MudText Typo="Typo.h5" Class="mb-1">@Mine.Name</MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
-        Raw resource: @(Mine.Resource?.Name ?? "?") &mdash; @GetNodePurityLabel(Mine.NodePurity) node &mdash; @Mine.OutputPerMinute.ToString("0.##")/min extraction rate
+        Raw resource: @(Mine.Resource?.Name ?? "?") &mdash; @Mine.OutputPerMinute.ToString("0.##")/min extraction rate
     </MudText>
 
     <!-- Capacity summary -->
@@ -47,6 +47,7 @@
         <MudTable Items="Mine.MiningStations.OrderBy(s => s.MinerMk).ThenBy(s => s.OverclockLevel)" Dense="true" Hover="true" Class="mb-4">
             <HeaderContent>
                 <MudTh>Miner</MudTh>
+                <MudTh>Purity</MudTh>
                 <MudTh>Overclock</MudTh>
                 <MudTh>Qty</MudTh>
                 <MudTh>Output/min (each)</MudTh>
@@ -55,10 +56,11 @@
             </HeaderContent>
             <RowTemplate>
                 @{
-                    var perUnit = new MiningStation { MinerMk = context.MinerMk, OverclockLevel = context.OverclockLevel, Quantity = 1 }.ComputeOutputPerMinute(Mine.NodePurity);
-                    var perGroup = context.ComputeOutputPerMinute(Mine.NodePurity);
+                    var perUnit = new MiningStation { MinerMk = context.MinerMk, OverclockLevel = context.OverclockLevel, NodePurity = context.NodePurity, Quantity = 1 }.ComputeOutputPerMinute();
+                    var perGroup = context.ComputeOutputPerMinute();
                 }
                 <MudTd>@GetMinerMkLabel(context.MinerMk)</MudTd>
+                <MudTd>@GetNodePurityLabel(context.NodePurity)</MudTd>
                 <MudTd>@GetOverclockLabel(context.OverclockLevel)</MudTd>
                 <MudTd>@context.Quantity</MudTd>
                 <MudTd>@perUnit.ToString("0.##")</MudTd>
@@ -162,16 +164,15 @@
     {
         var parameters = new DialogParameters<MiningStationDialog>
         {
-            { x => x.MineId, Mine!.Id },
-            { x => x.NodePurity, Mine!.NodePurity }
+            { x => x.MineId, Mine!.Id }
         };
         var dialog = await DialogService.ShowAsync<MiningStationDialog>("Add Mining Station", parameters);
         var result = await dialog.Result;
         if (!result!.Canceled && result.Data is MiningStation station)
         {
-            if (Mine!.MiningStations.Any(s => s.MinerMk == station.MinerMk && s.OverclockLevel == station.OverclockLevel))
+            if (Mine!.MiningStations.Any(s => s.MinerMk == station.MinerMk && s.OverclockLevel == station.OverclockLevel && s.NodePurity == station.NodePurity))
             {
-                Snackbar.Add("A mining station with this miner type and overclock level already exists for this mine.", Severity.Warning);
+                Snackbar.Add("A mining station with this miner type, overclock level and node purity already exists for this mine.", Severity.Warning);
                 return;
             }
             try
@@ -192,16 +193,15 @@
         var parameters = new DialogParameters<MiningStationDialog>
         {
             { x => x.Station, station },
-            { x => x.MineId, Mine!.Id },
-            { x => x.NodePurity, Mine!.NodePurity }
+            { x => x.MineId, Mine!.Id }
         };
         var dialog = await DialogService.ShowAsync<MiningStationDialog>("Edit Mining Station", parameters);
         var result = await dialog.Result;
         if (!result!.Canceled && result.Data is MiningStation updated)
         {
-            if (Mine!.MiningStations.Any(s => s.MinerMk == updated.MinerMk && s.OverclockLevel == updated.OverclockLevel && s.Id != updated.Id))
+            if (Mine!.MiningStations.Any(s => s.MinerMk == updated.MinerMk && s.OverclockLevel == updated.OverclockLevel && s.NodePurity == updated.NodePurity && s.Id != updated.Id))
             {
-                Snackbar.Add("A mining station with this miner type and overclock level already exists for this mine.", Severity.Warning);
+                Snackbar.Add("A mining station with this miner type, overclock level and node purity already exists for this mine.", Severity.Warning);
                 return;
             }
             try
