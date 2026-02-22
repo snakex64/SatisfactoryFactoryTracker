@@ -1,0 +1,54 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="isValid">
+            <div data-test-id="station-dialog-overclock" class="mb-3">
+                <MudSelect @bind-Value="overclockLevel" Label="Overclock Level" Required="true" RequiredError="Overclock level is required.">
+                    <MudSelectItem Value="0">No Overclock (100%)</MudSelectItem>
+                    <MudSelectItem Value="1">+1 Overclock (150%)</MudSelectItem>
+                    <MudSelectItem Value="2">+2 Overclocks (200%)</MudSelectItem>
+                    <MudSelectItem Value="3">+3 Overclocks (300%)</MudSelectItem>
+                </MudSelect>
+            </div>
+            <MudNumericField @bind-Value="quantity" Label="Quantity" Min="1" Required="true" RequiredError="Quantity is required." data-test-id="station-dialog-quantity" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" data-test-id="station-dialog-cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" data-test-id="station-dialog-submit">@(Station is null ? "Add" : "Save")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public MiningStation? Station { get; set; }
+    [Parameter] public int MineId { get; set; }
+
+    private MudForm form = null!;
+    private bool isValid;
+    private int overclockLevel;
+    private int quantity = 1;
+
+    protected override void OnParametersSet()
+    {
+        if (Station is not null)
+        {
+            overclockLevel = Station.OverclockLevel;
+            quantity = Station.Quantity;
+        }
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!isValid) return;
+
+        var result = Station is null
+            ? new MiningStation { MineId = MineId, OverclockLevel = overclockLevel, Quantity = quantity }
+            : new MiningStation { Id = Station.Id, MineId = Station.MineId, OverclockLevel = overclockLevel, Quantity = quantity };
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

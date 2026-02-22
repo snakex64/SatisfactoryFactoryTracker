@@ -8,4 +8,5 @@ public class Mine
     public Resource? Resource { get; set; }
     public decimal OutputPerMinute { get; set; }
     public ICollection<MineOutput> Outputs { get; set; } = [];
+    public ICollection<MiningStation> MiningStations { get; set; } = [];
 }

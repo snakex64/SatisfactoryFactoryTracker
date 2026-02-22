@@ -71,6 +71,41 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<MiningStation> AddMiningStationAsync(MiningStation station, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var duplicate = await dbContext.MiningStations
+            .AnyAsync(s => s.MineId == station.MineId && s.OverclockLevel == station.OverclockLevel, cancellationToken);
+        if (duplicate)
+            throw new InvalidOperationException("A mining station with this overclock level already exists for this mine.");
+        dbContext.MiningStations.Add(station);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return station;
+    }
+
+    public async Task UpdateMiningStationAsync(MiningStation station, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var existing = await dbContext.MiningStations.FindAsync([station.Id], cancellationToken)
+            ?? throw new InvalidOperationException($"MiningStation {station.Id} not found.");
+        var duplicate = await dbContext.MiningStations
+            .AnyAsync(s => s.MineId == existing.MineId && s.OverclockLevel == station.OverclockLevel && s.Id != station.Id, cancellationToken);
+        if (duplicate)
+            throw new InvalidOperationException("A mining station with this overclock level already exists for this mine.");
+        existing.OverclockLevel = station.OverclockLevel;
+        existing.Quantity = station.Quantity;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteMiningStationAsync(int stationId, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var station = await dbContext.MiningStations.FindAsync([stationId], cancellationToken)
+            ?? throw new InvalidOperationException($"MiningStation {stationId} not found.");
+        dbContext.MiningStations.Remove(station);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<Factory> AddFactoryAsync(Factory factory, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
