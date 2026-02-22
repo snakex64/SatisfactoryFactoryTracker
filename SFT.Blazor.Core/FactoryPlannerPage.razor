@@ -122,6 +122,16 @@
                                                     {
                                                         <MudText Typo="Typo.caption" Color="Color.Secondary">@level.Description</MudText>
                                                     }
+                                                    @foreach (var output in level.Outputs.OrderBy(o => o.Resource?.Name))
+                                                    {
+                                                        var outUsed = GetLevelOutputUsedForResource(level.Id, output.ResourceId);
+                                                        var outFree = output.AmountPerMinute - outUsed;
+                                                        var outPct = output.AmountPerMinute > 0 ? Math.Min(1.0, (double)outUsed / (double)output.AmountPerMinute) : 0.0;
+                                                        <div style="font-size:0.72rem; color:var(--mud-palette-text-secondary);">
+                                                            @output.Resource?.Name &mdash;
+                                                            <span style="color:@GetCapacityColor(outPct); font-weight:600;">@outFree.ToString("0.##") / @output.AmountPerMinute.ToString("0.##") free</span>
+                                                        </div>
+                                                    }
                                                 </div>
                                                 <span @onclick:stopPropagation="true">
                                                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
@@ -459,6 +469,12 @@
 
     private decimal GetMineUsedPerMinute(int mineId) =>
         mines.FirstOrDefault(m => m.Id == mineId)?.Outputs.Sum(o => o.InputAmountPerMinute) ?? 0m;
+
+    private decimal GetLevelOutputUsedForResource(int levelId, int resourceId) =>
+        factories.SelectMany(f => f.Levels)
+                 .SelectMany(l => l.Inputs)
+                 .Where(i => i.SourceFactoryLevelId == levelId && i.ResourceId == resourceId)
+                 .Sum(i => i.AmountPerMinute);
 
     private static string GetCapacityColor(double pct) => pct switch
     {
