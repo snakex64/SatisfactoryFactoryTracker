@@ -1,13 +1,13 @@
 <MudDialog>
     <DialogContent>
         <MudForm @ref="form" @bind-IsValid="isValid">
-            <MudTextField @bind-Value="name" Label="Mine Name" Required="true" RequiredError="Name is required." Class="mb-3" data-test-id="mine-dialog-name" />
+            <MudTextField @bind-Value="name" Label="Mine Name" Required="true" RequiredError="Name is required." Class="mb-3" data-test-id="mine-dialog-name" autocomplete="off" />
             <div data-test-id="mine-dialog-resource">
                 <MudAutocomplete T="Resource" @bind-Value="selectedResource" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3"
                                  SearchFunc="SearchResources" ToStringFunc="@(r => r?.Name ?? string.Empty)" CoerceText="false"
                                  OpenOnFocus="true" MinCharacters="0" />
             </div>
-            <MudNumericField @bind-Value="outputPerMinute" Label="Output per Minute" Min="0m" Required="true" RequiredError="Output is required." />
+            <MudNumericField @bind-Value="outputPerMinute" Label="Output per Minute" Min="0m" Required="true" RequiredError="Output is required." autocomplete="off" />
         </MudForm>
     </DialogContent>
     <DialogActions>

@@ -1,8 +1,8 @@
 <MudDialog>
     <DialogContent>
         <MudForm @ref="form" @bind-IsValid="isValid">
-            <MudTextField @bind-Value="identifier" Label="Level Name" Required="true" RequiredError="Name is required." Class="mb-3" data-test-id="level-dialog-identifier" />
-            <MudTextField @bind-Value="description" Label="Description" Lines="3" />
+            <MudTextField @bind-Value="identifier" Label="Level Name" Required="true" RequiredError="Name is required." Class="mb-3" data-test-id="level-dialog-identifier" autocomplete="off" />
+            <MudTextField @bind-Value="description" Label="Description" Lines="3" autocomplete="off" />
         </MudForm>
     </DialogContent>
     <DialogActions>
