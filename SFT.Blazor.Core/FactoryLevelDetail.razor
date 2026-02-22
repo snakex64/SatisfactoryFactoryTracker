@@ -26,12 +26,43 @@
         <MudTable Items="Level.Outputs.OrderBy(o => o.Resource?.Name)" Dense="true" Hover="true" Class="mb-4">
             <HeaderContent>
                 <MudTh>Resource</MudTh>
-                <MudTh>Amount / min</MudTh>
+                <MudTh>Total / min</MudTh>
+                <MudTh>Used / min</MudTh>
+                <MudTh>Free / min</MudTh>
+                <MudTh>Consumers</MudTh>
                 <MudTh></MudTh>
             </HeaderContent>
             <RowTemplate>
+                @{
+                    var used = GetOutputUsed(context.ResourceId);
+                    var free = context.AmountPerMinute - used;
+                    var pctUsed = context.AmountPerMinute > 0 ? Math.Min(1.0, (double)used / (double)context.AmountPerMinute) : 0.0;
+                    var capacityColor = GetCapacityColor(pctUsed);
+                    var consumers = GetOutputConsumers(context.ResourceId).ToList();
+                }
                 <MudTd>@context.Resource?.Name</MudTd>
-                <MudTd>@context.AmountPerMinute</MudTd>
+                <MudTd>@context.AmountPerMinute.ToString("0.##")</MudTd>
+                <MudTd>@used.ToString("0.##")</MudTd>
+                <MudTd>
+                    <span style="color:@capacityColor; font-weight:600;">@free.ToString("0.##")</span>
+                    <MudProgressLinear Value="@(pctUsed * 100)" Color="@GetProgressColor(pctUsed)" Rounded="true" Size="Size.Small" Class="mt-1" Style="max-width:80px;" />
+                </MudTd>
+                <MudTd>
+                    @if (!consumers.Any())
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">None</MudText>
+                    }
+                    else
+                    {
+                        @foreach (var (consumerLevel, input) in consumers)
+                        {
+                            <div style="font-size:0.8rem;">
+                                <MudIcon Icon="@Icons.Material.Filled.Factory" Size="Size.Small" Style="vertical-align:middle;" Class="mr-1" />
+                                @($"{consumerLevel.Factory?.Name} / {consumerLevel.Identifier}") &mdash; @input.AmountPerMinute.ToString("0.##")/min
+                            </div>
+                        }
+                    }
+                </MudTd>
                 <MudTd>
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit output" OnClick="() => OpenEditOutputDialog(context)" />
                     <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete output" OnClick="() => DeleteOutput(context)" />
@@ -98,6 +129,31 @@
 
     private IReadOnlyList<FactoryLevel> OtherLevels =>
         Level is null ? AllLevels : AllLevels.Where(l => l.Id != Level.Id).ToList();
+
+    private decimal GetOutputUsed(int resourceId) =>
+        AllLevels
+            .SelectMany(l => l.Inputs)
+            .Where(i => i.SourceFactoryLevelId == Level!.Id && i.ResourceId == resourceId)
+            .Sum(i => i.AmountPerMinute);
+
+    private IEnumerable<(FactoryLevel Level, FactoryInput Input)> GetOutputConsumers(int resourceId) =>
+        AllLevels
+            .SelectMany(l => l.Inputs.Select(i => (Level: l, Input: i)))
+            .Where(x => x.Input.SourceFactoryLevelId == Level!.Id && x.Input.ResourceId == resourceId);
+
+    private static string GetCapacityColor(double pct) => pct switch
+    {
+        >= 1.0 => "var(--mud-palette-error)",
+        >= 0.75 => "var(--mud-palette-warning)",
+        _ => "var(--mud-palette-success)"
+    };
+
+    private static Color GetProgressColor(double pct) => pct switch
+    {
+        >= 1.0 => Color.Error,
+        >= 0.75 => Color.Warning,
+        _ => Color.Success
+    };
 
     // Output dialogs
     private async Task OpenAddOutputDialog()
