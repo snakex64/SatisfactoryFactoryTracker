@@ -10,6 +10,7 @@ public class FactoryTrackerCommands(SatisfactoryDbContext dbContext) : IFactoryT
     {
         dbContext.Mines.Add(mine);
         await dbContext.SaveChangesAsync(cancellationToken);
+        dbContext.Entry(mine).State = EntityState.Detached;
         return mine;
     }
 
@@ -21,6 +22,7 @@ public class FactoryTrackerCommands(SatisfactoryDbContext dbContext) : IFactoryT
         existing.ResourceId = mine.ResourceId;
         existing.OutputPerMinute = mine.OutputPerMinute;
         await dbContext.SaveChangesAsync(cancellationToken);
+        dbContext.Entry(existing).State = EntityState.Detached;
     }
 
     public async Task DeleteMineAsync(int mineId, CancellationToken cancellationToken = default)
