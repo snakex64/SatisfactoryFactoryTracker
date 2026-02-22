@@ -50,7 +50,7 @@ public sealed class AppFixture : IAsyncDisposable
         builder.Services.AddMudServices();
 
         // … but swap PostgreSQL for an EF Core InMemory database so no Docker is needed.
-        builder.Services.AddDbContext<SatisfactoryDbContext>(options =>
+        builder.Services.AddDbContextFactory<SatisfactoryDbContext>(options =>
             options.UseInMemoryDatabase("PlaywrightTestDb"));
 
         builder.Services.AddScoped<IFactoryTrackerQueries, FactoryTrackerQueries>();

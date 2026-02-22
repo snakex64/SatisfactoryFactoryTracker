@@ -11,7 +11,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddMudServices();
 
-builder.Services.AddDbContext<SatisfactoryDbContext>(options =>
+builder.Services.AddDbContextFactory<SatisfactoryDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("sftdb");
     if (string.IsNullOrWhiteSpace(connectionString))
