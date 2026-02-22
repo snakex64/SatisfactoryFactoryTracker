@@ -59,11 +59,11 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
 
     public async Task<IReadOnlyList<Resource>> GetResourcesProducibleFromAsync(int rawResourceId, CancellationToken cancellationToken = default)
     {
-        // Returns the raw resource itself plus any resource that is the output of a recipe
-        // that takes the raw resource as an input ingredient.
+        // Returns only resources that are the direct output of a recipe whose inputs include
+        // the given raw resource. The raw resource itself is intentionally excluded because
+        // mines are expected to output processed goods (e.g. Iron Ingot), not the ore.
         return await dbContext.Resources
-            .Where(r => r.Id == rawResourceId
-                || dbContext.ProductionRecipeResources.Any(output =>
+            .Where(r => dbContext.ProductionRecipeResources.Any(output =>
                     !output.IsInput
                     && output.ResourceId == r.Id
                     && dbContext.ProductionRecipeResources.Any(input =>
