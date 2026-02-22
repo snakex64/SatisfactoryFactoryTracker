@@ -168,6 +168,11 @@
         var result = await dialog.Result;
         if (!result!.Canceled && result.Data is FactoryOutput output)
         {
+            if (Level!.Outputs.Any(o => o.ResourceId == output.ResourceId))
+            {
+                Snackbar.Add("This resource is already added as an output for this level.", Severity.Warning);
+                return;
+            }
             try
             {
                 await Commands.AddFactoryOutputAsync(output);
@@ -192,6 +197,11 @@
         var result = await dialog.Result;
         if (!result!.Canceled && result.Data is FactoryOutput updated)
         {
+            if (Level!.Outputs.Any(o => o.ResourceId == updated.ResourceId && o.Id != updated.Id))
+            {
+                Snackbar.Add("This resource is already added as an output for this level.", Severity.Warning);
+                return;
+            }
             try
             {
                 await Commands.UpdateFactoryOutputAsync(updated);
@@ -242,6 +252,11 @@
         var result = await dialog.Result;
         if (!result!.Canceled && result.Data is FactoryInput input)
         {
+            if (Level!.Inputs.Any(i => i.ResourceId == input.ResourceId))
+            {
+                Snackbar.Add("This resource is already added as an input for this level.", Severity.Warning);
+                return;
+            }
             try
             {
                 await Commands.AddFactoryInputAsync(input);
@@ -268,6 +283,11 @@
         var result = await dialog.Result;
         if (!result!.Canceled && result.Data is FactoryInput updated)
         {
+            if (Level!.Inputs.Any(i => i.ResourceId == updated.ResourceId && i.Id != updated.Id))
+            {
+                Snackbar.Add("This resource is already added as an input for this level.", Severity.Warning);
+                return;
+            }
             try
             {
                 await Commands.UpdateFactoryInputAsync(updated);

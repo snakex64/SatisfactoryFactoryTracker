@@ -70,6 +70,10 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<FactoryInput>()
+            .HasIndex(i => new { i.FactoryLevelId, i.ResourceId })
+            .IsUnique();
+
+        modelBuilder.Entity<FactoryInput>()
             .ToTable(t => t.HasCheckConstraint(
                 "CK_FactoryInputs_Source",
                 "(\"SourceMineId\" IS NULL) <> (\"SourceFactoryLevelId\" IS NULL)"));
@@ -84,6 +88,10 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
             .WithMany()
             .HasForeignKey(o => o.ResourceId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FactoryOutput>()
+            .HasIndex(o => new { o.FactoryLevelId, o.ResourceId })
+            .IsUnique();
 
         modelBuilder.Entity<ProductionRecipe>()
             .HasIndex(r => r.KeyName)

@@ -122,6 +122,10 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
     public async Task<FactoryOutput> AddFactoryOutputAsync(FactoryOutput output, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var duplicate = await dbContext.FactoryOutputs
+            .AnyAsync(o => o.FactoryLevelId == output.FactoryLevelId && o.ResourceId == output.ResourceId, cancellationToken);
+        if (duplicate)
+            throw new InvalidOperationException("This resource is already added as an output for this level.");
         dbContext.FactoryOutputs.Add(output);
         await dbContext.SaveChangesAsync(cancellationToken);
         return output;
@@ -132,6 +136,10 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var existing = await dbContext.FactoryOutputs.FindAsync([output.Id], cancellationToken)
             ?? throw new InvalidOperationException($"FactoryOutput {output.Id} not found.");
+        var duplicate = await dbContext.FactoryOutputs
+            .AnyAsync(o => o.FactoryLevelId == existing.FactoryLevelId && o.ResourceId == output.ResourceId && o.Id != output.Id, cancellationToken);
+        if (duplicate)
+            throw new InvalidOperationException("This resource is already added as an output for this level.");
         existing.ResourceId = output.ResourceId;
         existing.AmountPerMinute = output.AmountPerMinute;
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -149,6 +157,10 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
     public async Task<FactoryInput> AddFactoryInputAsync(FactoryInput input, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var duplicate = await dbContext.FactoryInputs
+            .AnyAsync(i => i.FactoryLevelId == input.FactoryLevelId && i.ResourceId == input.ResourceId, cancellationToken);
+        if (duplicate)
+            throw new InvalidOperationException("This resource is already added as an input for this level.");
         dbContext.FactoryInputs.Add(input);
         await dbContext.SaveChangesAsync(cancellationToken);
         return input;
@@ -159,6 +171,10 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var existing = await dbContext.FactoryInputs.FindAsync([input.Id], cancellationToken)
             ?? throw new InvalidOperationException($"FactoryInput {input.Id} not found.");
+        var duplicate = await dbContext.FactoryInputs
+            .AnyAsync(i => i.FactoryLevelId == existing.FactoryLevelId && i.ResourceId == input.ResourceId && i.Id != input.Id, cancellationToken);
+        if (duplicate)
+            throw new InvalidOperationException("This resource is already added as an input for this level.");
         existing.ResourceId = input.ResourceId;
         existing.AmountPerMinute = input.AmountPerMinute;
         existing.SourceMineId = input.SourceMineId;
