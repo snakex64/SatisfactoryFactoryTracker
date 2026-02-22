@@ -46,13 +46,26 @@
         <MudTable Items="Mine.Outputs.OrderBy(o => o.Resource?.Name)" Dense="true" Hover="true">
             <HeaderContent>
                 <MudTh>Resource</MudTh>
-                <MudTh>Amount / min</MudTh>
+                <MudTh>Total / min</MudTh>
+                <MudTh>Used / min</MudTh>
+                <MudTh>Free / min</MudTh>
                 <MudTh>Ore consumed / min</MudTh>
                 <MudTh></MudTh>
             </HeaderContent>
             <RowTemplate>
+                @{
+                    var outUsed = GetMineOutputUsed(context.ResourceId);
+                    var outFree = context.AmountPerMinute - outUsed;
+                    var outPct = context.AmountPerMinute > 0 ? Math.Min(1.0, (double)outUsed / (double)context.AmountPerMinute) : 0.0;
+                    var capacityColor = GetCapacityColor(outPct);
+                }
                 <MudTd>@context.Resource?.Name</MudTd>
-                <MudTd>@context.AmountPerMinute</MudTd>
+                <MudTd>@context.AmountPerMinute.ToString("0.##")</MudTd>
+                <MudTd>@outUsed.ToString("0.##")</MudTd>
+                <MudTd>
+                    <span style="color:@capacityColor; font-weight:600;">@outFree.ToString("0.##")</span>
+                    <MudProgressLinear Value="@(outPct * 100)" Color="@GetProgressColor(outPct)" Rounded="true" Size="Size.Small" Class="mt-1" Style="max-width:80px;" />
+                </MudTd>
                 <MudTd>@context.InputAmountPerMinute.ToString("0.##")</MudTd>
                 <MudTd>
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit output" OnClick="() => OpenEditOutputDialog(context)" />
@@ -66,9 +79,17 @@
 @code {
     [Parameter] public Mine? Mine { get; set; }
     [Parameter] public decimal UsedPerMinute { get; set; }
+    [Parameter] public IReadOnlyList<FactoryLevel> AllLevels { get; set; } = [];
     [Parameter] public EventCallback OnChanged { get; set; }
 
     private IReadOnlyList<Resource> _producibleResources = [];
+
+    private decimal GetMineOutputUsed(int resourceId) =>
+        Mine is null ? 0m :
+        AllLevels
+            .SelectMany(l => l.Inputs)
+            .Where(i => i.SourceMineId == Mine.Id && i.ResourceId == resourceId)
+            .Sum(i => i.AmountPerMinute);
 
     private static string GetCapacityColor(double pct) => pct switch
     {
