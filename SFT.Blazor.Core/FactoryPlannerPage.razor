@@ -25,72 +25,124 @@
             }
 
             <!-- Raw Ore Mines -->
-            <div class="d-flex align-center mb-1">
-                <MudText Typo="Typo.subtitle2" Class="flex-grow-1" Style="font-weight: 600;">Raw Ore Mines</MudText>
+            <div class="d-flex align-center px-1 py-1 mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.Terrain" Size="Size.Small" Class="mr-1" Color="Color.Primary" />
+                <MudText Typo="Typo.subtitle2" Class="flex-grow-1" Style="font-weight:700;">Raw Ore Mines</MudText>
                 <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" aria-label="Add mine" OnClick="OpenAddMineDialog" data-test-id="add-mine-btn" />
             </div>
-            @foreach (var mine in mines)
+            @if (!mines.Any())
             {
-                <div class="d-flex align-center pl-2 mb-1 @(selectedMine?.Id == mine.Id ? "selected-level" : "")"
-                     style="cursor: pointer; border-radius: 4px; @(selectedMine?.Id == mine.Id ? "background: var(--mud-palette-action-default-hover);" : "")">
-                    <div class="flex-grow-1" @onclick="() => SelectMine(mine)">
-                        <MudText Typo="Typo.body2">
-                            @mine.Name
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Style="display: inline; margin-left: 4px;">
-                                (@(mine.Resource?.Name ?? "?"), @mine.OutputPerMinute/min)
-                            </MudText>
-                        </MudText>
-                    </div>
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit mine" OnClick="() => OpenEditMineDialog(mine)" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete mine" OnClick="() => DeleteMine(mine)" />
-                </div>
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="px-4 mb-2 d-block">No mines added yet.</MudText>
+            }
+            else
+            {
+                <MudTreeView T="Mine" Dense="true" Hover="true">
+                    @foreach (var mine in mines)
+                    {
+                        var used = GetMineUsedPerMinute(mine.Id);
+                        var free = mine.OutputPerMinute - used;
+                        var pctUsed = mine.OutputPerMinute > 0 ? Math.Min(1.0, (double)used / (double)mine.OutputPerMinute) : 0.0;
+                        <MudTreeViewItem T="Mine" Value="@mine" CanExpand="false"
+                                         Selected="@(selectedMine?.Id == mine.Id)"
+                                         OnClick="@(() => SelectMine(mine))">
+                            <BodyContent>
+                                <div class="d-flex align-center flex-grow-1" style="min-width:0">
+                                    <div class="flex-grow-1" style="min-width:0">
+                                        <MudText Typo="Typo.body2">@mine.Name</MudText>
+                                        <div style="font-size:0.72rem; color:var(--mud-palette-text-secondary);">
+                                            @mine.Resource?.Name &mdash;
+                                            <span style="color:@GetCapacityColor(pctUsed); font-weight:600;">@free.ToString("0.##") / @mine.OutputPerMinute.ToString("0.##") free</span>
+                                        </div>
+                                    </div>
+                                    <span @onclick:stopPropagation="true">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                                       aria-label="Edit mine"
+                                                       OnClick="@(() => OpenEditMineDialog(mine))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                                       aria-label="Delete mine"
+                                                       OnClick="@(() => DeleteMine(mine))" />
+                                    </span>
+                                </div>
+                            </BodyContent>
+                        </MudTreeViewItem>
+                    }
+                </MudTreeView>
             }
 
-            <MudDivider Class="my-2" />
+            <MudDivider Class="my-3" />
 
             <!-- Factories -->
-            <div class="d-flex align-center mb-1">
-                <MudText Typo="Typo.subtitle2" Class="flex-grow-1" Style="font-weight: 600;">Factories</MudText>
+            <div class="d-flex align-center px-1 py-1 mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.Factory" Size="Size.Small" Class="mr-1" Color="Color.Primary" />
+                <MudText Typo="Typo.subtitle2" Class="flex-grow-1" Style="font-weight:700;">Factories</MudText>
                 <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" aria-label="Add factory" OnClick="OpenAddFactoryDialog" data-test-id="add-factory-btn" />
             </div>
-            @foreach (var factory in factories)
+            @if (!factories.Any())
             {
-                <div class="mb-1">
-                    <div class="d-flex align-center pl-2">
-                        <div class="flex-grow-1">
-                            <MudText Typo="Typo.body2" Style="font-weight: 500;">@factory.Name</MudText>
-                            @if (!string.IsNullOrWhiteSpace(factory.Description))
-                            {
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@factory.Description</MudText>
-                            }
-                        </div>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit factory" OnClick="() => OpenEditFactoryDialog(factory)" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete factory" OnClick="() => DeleteFactory(factory)" />
-                    </div>
-
-                    <!-- Levels under this factory -->
-                    <div class="pl-4">
-                        <div class="d-flex align-center">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="flex-grow-1">Levels</MudText>
-                            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" aria-label="Add level" OnClick="() => OpenAddLevelDialog(factory)" />
-                        </div>
-                        @foreach (var level in factory.Levels.OrderBy(l => l.Identifier))
-                        {
-                            <div class="d-flex align-center pl-2 mb-1 @(selectedLevel?.Id == level.Id ? "selected-level" : "")"
-                                 style="cursor: pointer; border-radius: 4px; @(selectedLevel?.Id == level.Id ? "background: var(--mud-palette-action-default-hover);" : "")">
-                                <div class="flex-grow-1" @onclick="() => SelectLevel(level)">
-                                    <MudText Typo="Typo.body2">@level.Identifier</MudText>
-                                    @if (!string.IsNullOrWhiteSpace(level.Description))
-                                    {
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@level.Description</MudText>
-                                    }
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="px-4 d-block">No factories added yet.</MudText>
+            }
+            else
+            {
+                <MudTreeView T="object" Dense="true" Hover="true">
+                    @foreach (var factory in factories)
+                    {
+                        <MudTreeViewItem T="object" Value="@((object)factory)"
+                                         Expanded="@_expandedFactoryIds.Contains(factory.Id)"
+                                         ExpandedChanged="@(v => ToggleFactoryExpanded(factory.Id, v))">
+                            <BodyContent>
+                                <div class="d-flex align-center flex-grow-1" style="min-width:0">
+                                    <div class="flex-grow-1" style="min-width:0">
+                                        <MudText Typo="Typo.body2" Style="font-weight:600;">@factory.Name</MudText>
+                                        @if (!string.IsNullOrWhiteSpace(factory.Description))
+                                        {
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@factory.Description</MudText>
+                                        }
+                                    </div>
+                                    <span @onclick:stopPropagation="true">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                                       aria-label="Edit factory"
+                                                       OnClick="@(() => OpenEditFactoryDialog(factory))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                                       aria-label="Delete factory"
+                                                       OnClick="@(() => DeleteFactory(factory))" />
+                                    </span>
                                 </div>
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit level" OnClick="() => OpenEditLevelDialog(level)" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete level" OnClick="() => DeleteLevel(level)" />
-                            </div>
-                        }
-                    </div>
-                </div>
+                            </BodyContent>
+                            <ChildContent>
+                                @foreach (var level in factory.Levels.OrderBy(l => l.Identifier))
+                                {
+                                    <MudTreeViewItem T="object" Value="@((object)level)" CanExpand="false"
+                                                     Selected="@(selectedLevel?.Id == level.Id)"
+                                                     OnClick="@(() => SelectLevel(level))">
+                                        <BodyContent>
+                                            <div class="d-flex align-center flex-grow-1" style="min-width:0">
+                                                <div class="flex-grow-1" style="min-width:0">
+                                                    <MudText Typo="Typo.body2">@level.Identifier</MudText>
+                                                    @if (!string.IsNullOrWhiteSpace(level.Description))
+                                                    {
+                                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@level.Description</MudText>
+                                                    }
+                                                </div>
+                                                <span @onclick:stopPropagation="true">
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                                                   aria-label="Edit level"
+                                                                   OnClick="@(() => OpenEditLevelDialog(level))" />
+                                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                                                   aria-label="Delete level"
+                                                                   OnClick="@(() => DeleteLevel(level))" />
+                                                </span>
+                                            </div>
+                                        </BodyContent>
+                                    </MudTreeViewItem>
+                                }
+                                <MudTreeViewItem T="object" Value="@((object)("add-level-" + factory.Id))" CanExpand="false"
+                                                 Icon="@Icons.Material.Filled.Add" IconColor="Color.Primary"
+                                                 Text="Add level"
+                                                 OnClick="@(() => OpenAddLevelDialog(factory))" />
+                            </ChildContent>
+                        </MudTreeViewItem>
+                    }
+                </MudTreeView>
             }
         </MudPaper>
     </MudItem>
@@ -100,7 +152,7 @@
         <MudPaper Elevation="0" Class="pa-4">
             @if (selectedMine is not null)
             {
-                <MineDetail Mine="selectedMine" OnChanged="OnMineChangedAsync" />
+                <MineDetail Mine="selectedMine" UsedPerMinute="@GetMineUsedPerMinute(selectedMine.Id)" OnChanged="OnMineChangedAsync" />
             }
             else if (selectedLevel is null)
             {
@@ -127,6 +179,7 @@
     private Mine? selectedMine;
     private string? errorMessage;
     private bool _isInteractive;
+    private HashSet<int> _expandedFactoryIds = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -164,6 +217,7 @@
     {
         selectedLevel = level;
         selectedMine = null;
+        _expandedFactoryIds.Add(level.FactoryId);
     }
 
     private void SelectMine(Mine mine)
@@ -401,5 +455,24 @@
                 Snackbar.Add($"Error deleting level: {ex.Message}", Severity.Error);
             }
         }
+    }
+
+    private decimal GetMineUsedPerMinute(int mineId) =>
+        factories.SelectMany(f => f.Levels)
+                 .SelectMany(l => l.Inputs)
+                 .Where(i => i.SourceMineId == mineId)
+                 .Sum(i => i.AmountPerMinute);
+
+    private static string GetCapacityColor(double pct) => pct switch
+    {
+        >= 1.0 => "var(--mud-palette-error)",
+        >= 0.75 => "var(--mud-palette-warning)",
+        _ => "var(--mud-palette-success)"
+    };
+
+    private void ToggleFactoryExpanded(int factoryId, bool expanded)
+    {
+        if (expanded) _expandedFactoryIds.Add(factoryId);
+        else _expandedFactoryIds.Remove(factoryId);
     }
 }
