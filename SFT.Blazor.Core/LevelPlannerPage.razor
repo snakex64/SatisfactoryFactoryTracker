@@ -50,7 +50,7 @@
                        data-test-id="level-planner-recipe">
                 @foreach (var recipe in _availableRecipes)
                 {
-                    <MudSelectItem Value="recipe">@recipe.RecipeName (@recipe.AmountPerMinute.ToString("0.##")/min per machine)</MudSelectItem>
+                    <MudSelectItem Value="recipe">@recipe.RecipeName (@recipe.AmountPerMinute.ToString("0.##") /min per machine)</MudSelectItem>
                 }
             </MudSelect>
         </MudItem>
@@ -198,9 +198,9 @@ else if (_selectedResource is not null && _availableRecipes.Count == 0)
     private Task<IEnumerable<Resource>> SearchResources(string value, CancellationToken token)
     {
         if (string.IsNullOrEmpty(value))
-            return Task.FromResult<IEnumerable<Resource>>(_allResources.ToList());
+            return Task.FromResult<IEnumerable<Resource>>(_allResources);
         return Task.FromResult<IEnumerable<Resource>>(
-            _allResources.Where(r => r.Name.Contains(value, StringComparison.OrdinalIgnoreCase)).ToList());
+            _allResources.Where(r => r.Name.Contains(value, StringComparison.OrdinalIgnoreCase)));
     }
 
     private void Analyze()
