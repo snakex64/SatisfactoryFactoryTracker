@@ -1,5 +1,7 @@
 # Agent Notes
 
+If anything changes, add the information to the agents.md file, located in the root of the repository.
+
 ## Project Structure
 
 ### SFT.Blazor.Core — Shared UI Library
