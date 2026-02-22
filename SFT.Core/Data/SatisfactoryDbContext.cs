@@ -49,7 +49,7 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<MiningStation>()
-            .HasIndex(s => new { s.MineId, s.MinerMk, s.OverclockLevel })
+            .HasIndex(s => new { s.MineId, s.MinerMk, s.OverclockLevel, s.NodePurity })
             .IsUnique();
 
         modelBuilder.Entity<FactoryLevel>()

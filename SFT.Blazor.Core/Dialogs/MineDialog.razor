@@ -7,13 +7,6 @@
                                  SearchFunc="SearchResources" ToStringFunc="@(r => r?.Name ?? string.Empty)" CoerceText="false"
                                  OpenOnFocus="true" MinCharacters="0" />
             </div>
-            <div data-test-id="mine-dialog-node-purity">
-                <MudSelect @bind-Value="nodePurity" Label="Node Purity" Required="true">
-                    <MudSelectItem Value="0">Impure (0.5×)</MudSelectItem>
-                    <MudSelectItem Value="1">Normal (1×)</MudSelectItem>
-                    <MudSelectItem Value="2">Pure (2×)</MudSelectItem>
-                </MudSelect>
-            </div>
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -32,7 +25,6 @@
     private bool isValid;
     private string name = string.Empty;
     private Resource? selectedResource;
-    private int nodePurity = 1;
 
     protected override void OnParametersSet()
     {
@@ -40,7 +32,6 @@
         {
             name = Mine.Name;
             selectedResource = Resources.FirstOrDefault(r => r.Id == Mine.ResourceId);
-            nodePurity = Mine.NodePurity;
         }
     }
 
@@ -58,8 +49,8 @@
 
         var resourceId = selectedResource.Id;
         var result = Mine is null
-            ? new Mine { Name = name, ResourceId = resourceId, NodePurity = nodePurity }
-            : new Mine { Id = Mine.Id, Name = name, ResourceId = resourceId, NodePurity = nodePurity };
+            ? new Mine { Name = name, ResourceId = resourceId }
+            : new Mine { Id = Mine.Id, Name = name, ResourceId = resourceId };
 
         MudDialog.Close(DialogResult.Ok(result));
     }
