@@ -1,5 +1,7 @@
 namespace SFT.Core.Queries;
 
+public sealed record MineRecipeOption(string KeyName, string Name, decimal InputOutputRatio);
+
 public sealed record ResourceRecipeView(
     string ResourceName,
     string ResourceKeyName,

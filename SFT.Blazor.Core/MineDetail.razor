@@ -47,11 +47,13 @@
             <HeaderContent>
                 <MudTh>Resource</MudTh>
                 <MudTh>Amount / min</MudTh>
+                <MudTh>Ore consumed / min</MudTh>
                 <MudTh></MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd>@context.Resource?.Name</MudTd>
                 <MudTd>@context.AmountPerMinute</MudTd>
+                <MudTd>@context.InputAmountPerMinute.ToString("0.##")</MudTd>
                 <MudTd>
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit output" OnClick="() => OpenEditOutputDialog(context)" />
                     <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete output" OnClick="() => DeleteOutput(context)" />
@@ -93,6 +95,7 @@
         var parameters = new DialogParameters<MineOutputDialog>
         {
             { x => x.MineId, Mine!.Id },
+            { x => x.MineResourceId, Mine!.ResourceId },
             { x => x.Resources, _producibleResources }
         };
         var dialog = await DialogService.ShowAsync<MineOutputDialog>("Add Output", parameters);
@@ -117,6 +120,7 @@
         var parameters = new DialogParameters<MineOutputDialog>
         {
             { x => x.Output, output },
+            { x => x.MineResourceId, Mine!.ResourceId },
             { x => x.Resources, _producibleResources }
         };
         var dialog = await DialogService.ShowAsync<MineOutputDialog>("Edit Output", parameters);

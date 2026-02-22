@@ -1,10 +1,27 @@
+@using SFT.Core.Queries
 <MudDialog>
     <DialogContent>
         <MudForm @ref="form" @bind-IsValid="isValid">
-            <MudAutocomplete T="Resource" @bind-Value="selectedResource" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3"
+            <MudAutocomplete T="Resource" Value="selectedResource" Label="Resource" Required="true" RequiredError="Resource is required." Class="mb-3"
                              SearchFunc="SearchResources" ToStringFunc="@(r => r?.Name ?? string.Empty)" CoerceText="false"
-                             OpenOnFocus="true" MinCharacters="0" data-test-id="mine-output-dialog-resource" />
-            <MudNumericField T="decimal" @bind-Value="amountPerMinute" Label="Amount per Minute" Min="0.01m" Required="true" RequiredError="Amount is required." data-test-id="mine-output-dialog-amount" />
+                             OpenOnFocus="true" MinCharacters="0" ValueChanged="OnResourceChanged" data-test-id="mine-output-dialog-resource" />
+            <MudNumericField T="decimal" Value="amountPerMinute" Label="Amount per Minute" Min="0.01m" Required="true" RequiredError="Amount is required." ValueChanged="OnAmountChanged" data-test-id="mine-output-dialog-amount" />
+            @if (_availableRecipes.Count > 0)
+            {
+                <MudSelect T="MineRecipeOption" Value="selectedRecipe" Label="Recipe" Required="true" RequiredError="Recipe is required." Class="mb-3"
+                           ToStringFunc="@(r => r?.Name ?? string.Empty)" ValueChanged="OnRecipeChanged" data-test-id="mine-output-dialog-recipe">
+                    @foreach (var recipe in _availableRecipes)
+                    {
+                        <MudSelectItem Value="recipe">@recipe.Name</MudSelectItem>
+                    }
+                </MudSelect>
+                @if (selectedRecipe is not null)
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        Raw ore consumed: @_inputAmountPerMinute.ToString("0.##") / min
+                    </MudText>
+                }
+            }
         </MudForm>
     </DialogContent>
     <DialogActions>
@@ -18,20 +35,71 @@
 
     [Parameter] public MineOutput? Output { get; set; }
     [Parameter] public int MineId { get; set; }
+    [Parameter] public int MineResourceId { get; set; }
     [Parameter] public IReadOnlyList<Resource> Resources { get; set; } = [];
+    [Inject] private IFactoryTrackerQueries Queries { get; set; } = null!;
 
     private MudForm form = null!;
     private bool isValid;
     private Resource? selectedResource;
     private decimal amountPerMinute;
+    private IReadOnlyList<MineRecipeOption> _availableRecipes = [];
+    private MineRecipeOption? selectedRecipe;
+    private decimal _inputAmountPerMinute;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (Output is not null)
         {
             selectedResource = Resources.FirstOrDefault(r => r.Id == Output.ResourceId);
             amountPerMinute = Output.AmountPerMinute;
+            _inputAmountPerMinute = Output.InputAmountPerMinute;
+            if (selectedResource is not null)
+            {
+                await LoadRecipesAsync(selectedResource.Id);
+                if (Output.RecipeKeyName is not null)
+                    selectedRecipe = _availableRecipes.FirstOrDefault(r => r.KeyName == Output.RecipeKeyName);
+            }
         }
+    }
+
+    private async Task OnResourceChanged(Resource? resource)
+    {
+        selectedResource = resource;
+        selectedRecipe = null;
+        _availableRecipes = [];
+        _inputAmountPerMinute = 0;
+        if (resource is not null)
+            await LoadRecipesAsync(resource.Id);
+    }
+
+    private async Task LoadRecipesAsync(int outputResourceId)
+    {
+        _availableRecipes = await Queries.GetMineOutputRecipesAsync(outputResourceId, MineResourceId);
+        if (_availableRecipes.Count == 1)
+        {
+            selectedRecipe = _availableRecipes[0];
+            RecalculateInput();
+        }
+    }
+
+    private void OnAmountChanged(decimal value)
+    {
+        amountPerMinute = value;
+        RecalculateInput();
+    }
+
+    private void OnRecipeChanged(MineRecipeOption? recipe)
+    {
+        selectedRecipe = recipe;
+        RecalculateInput();
+    }
+
+    private void RecalculateInput()
+    {
+        _inputAmountPerMinute = selectedRecipe is not null
+            ? Math.Round(amountPerMinute * selectedRecipe.InputOutputRatio, 4)
+            : 0;
     }
 
     private Task<IEnumerable<Resource>> SearchResources(string value, CancellationToken token)
@@ -45,10 +113,11 @@
     {
         await form.Validate();
         if (!isValid || selectedResource is null) return;
+        if (_availableRecipes.Count > 0 && selectedRecipe is null) return;
 
         var result = Output is null
-            ? new MineOutput { MineId = MineId, ResourceId = selectedResource.Id, AmountPerMinute = amountPerMinute }
-            : new MineOutput { Id = Output.Id, MineId = Output.MineId, ResourceId = selectedResource.Id, AmountPerMinute = amountPerMinute };
+            ? new MineOutput { MineId = MineId, ResourceId = selectedResource.Id, AmountPerMinute = amountPerMinute, RecipeKeyName = selectedRecipe?.KeyName, InputAmountPerMinute = _inputAmountPerMinute }
+            : new MineOutput { Id = Output.Id, MineId = Output.MineId, ResourceId = selectedResource.Id, AmountPerMinute = amountPerMinute, RecipeKeyName = selectedRecipe?.KeyName, InputAmountPerMinute = _inputAmountPerMinute };
 
         MudDialog.Close(DialogResult.Ok(result));
     }

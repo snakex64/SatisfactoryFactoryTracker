@@ -80,6 +80,27 @@ public class FactoryTrackerQueries(IDbContextFactory<SatisfactoryDbContext> dbCo
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<MineRecipeOption>> GetMineOutputRecipesAsync(int outputResourceId, int inputResourceId, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var recipes = await dbContext.ProductionRecipes
+            .Include(r => r.Resources)
+            .Where(r =>
+                r.Resources.Any(rr => !rr.IsInput && rr.ResourceId == outputResourceId) &&
+                r.Resources.Any(rr => rr.IsInput && rr.ResourceId == inputResourceId))
+            .AsNoTracking()
+            .OrderBy(r => r.Name)
+            .ToListAsync(cancellationToken);
+
+        return recipes.Select(r =>
+        {
+            var outputEntry = r.Resources.First(rr => !rr.IsInput && rr.ResourceId == outputResourceId);
+            var inputEntry = r.Resources.First(rr => rr.IsInput && rr.ResourceId == inputResourceId);
+            var ratio = outputEntry.Amount > 0 ? inputEntry.Amount / outputEntry.Amount : 0m;
+            return new MineRecipeOption(r.KeyName, r.Name, ratio);
+        }).ToList();
+    }
+
     public async Task<IReadOnlyList<ResourceRecipeView>> GetResourceRecipesAsync(CancellationToken cancellationToken = default)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);

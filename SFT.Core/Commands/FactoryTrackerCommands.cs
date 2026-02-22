@@ -49,6 +49,8 @@ public class FactoryTrackerCommands(IDbContextFactory<SatisfactoryDbContext> dbC
             ?? throw new InvalidOperationException($"MineOutput {output.Id} not found.");
         existing.ResourceId = output.ResourceId;
         existing.AmountPerMinute = output.AmountPerMinute;
+        existing.RecipeKeyName = output.RecipeKeyName;
+        existing.InputAmountPerMinute = output.InputAmountPerMinute;
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
