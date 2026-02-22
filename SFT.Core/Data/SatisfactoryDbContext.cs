@@ -8,6 +8,7 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<Mine> Mines => Set<Mine>();
     public DbSet<MineOutput> MineOutputs => Set<MineOutput>();
+    public DbSet<MiningStation> MiningStations => Set<MiningStation>();
     public DbSet<Factory> Factories => Set<Factory>();
     public DbSet<FactoryLevel> FactoryLevels => Set<FactoryLevel>();
     public DbSet<FactoryInput> FactoryInputs => Set<FactoryInput>();
@@ -39,6 +40,16 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
 
         modelBuilder.Entity<MineOutput>()
             .HasIndex(o => new { o.MineId, o.ResourceId })
+            .IsUnique();
+
+        modelBuilder.Entity<MiningStation>()
+            .HasOne(s => s.Mine)
+            .WithMany(m => m.MiningStations)
+            .HasForeignKey(s => s.MineId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<MiningStation>()
+            .HasIndex(s => new { s.MineId, s.MinerMk, s.OverclockLevel })
             .IsUnique();
 
         modelBuilder.Entity<FactoryLevel>()

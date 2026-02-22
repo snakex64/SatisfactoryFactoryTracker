@@ -1,0 +1,75 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="form" @bind-IsValid="isValid">
+            <div data-test-id="station-dialog-miner-mk" class="mb-3">
+                <MudSelect @bind-Value="minerMk" Label="Miner Type" Required="true" RequiredError="Miner type is required.">
+                    <MudSelectItem Value="1">MK1 (60/min base)</MudSelectItem>
+                    <MudSelectItem Value="2">MK2 (120/min base)</MudSelectItem>
+                    <MudSelectItem Value="3">MK3 (240/min base)</MudSelectItem>
+                </MudSelect>
+            </div>
+            <div data-test-id="station-dialog-overclock" class="mb-3">
+                <MudSelect @bind-Value="overclockLevel" Label="Overclock Level" Required="true" RequiredError="Overclock level is required.">
+                    <MudSelectItem Value="0">No Overclock (100%)</MudSelectItem>
+                    <MudSelectItem Value="1">+1 Overclock (150%)</MudSelectItem>
+                    <MudSelectItem Value="2">+2 Overclocks (200%)</MudSelectItem>
+                    <MudSelectItem Value="3">+3 Overclocks (300%)</MudSelectItem>
+                </MudSelect>
+            </div>
+            <MudNumericField @bind-Value="quantity" Label="Quantity" Min="1" Required="true" RequiredError="Quantity is required." Class="mb-3" data-test-id="station-dialog-quantity" />
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Output: @OutputPerUnit.ToString("0.##") /min per station &mdash; <strong>@OutputTotal.ToString("0.##") /min total</strong>
+            </MudText>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" data-test-id="station-dialog-cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" data-test-id="station-dialog-submit">@(Station is null ? "Add" : "Save")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public MiningStation? Station { get; set; }
+    [Parameter] public int MineId { get; set; }
+    [Parameter] public int NodePurity { get; set; } = 1;
+
+    private MudForm form = null!;
+    private bool isValid;
+    private int minerMk = 1;
+    private int overclockLevel;
+    private int quantity = 1;
+
+    private decimal OutputPerUnit =>
+        new MiningStation { MinerMk = minerMk, OverclockLevel = overclockLevel, Quantity = 1 }
+            .ComputeOutputPerMinute(NodePurity);
+
+    private decimal OutputTotal =>
+        new MiningStation { MinerMk = minerMk, OverclockLevel = overclockLevel, Quantity = quantity }
+            .ComputeOutputPerMinute(NodePurity);
+
+    protected override void OnParametersSet()
+    {
+        if (Station is not null)
+        {
+            minerMk = Station.MinerMk;
+            overclockLevel = Station.OverclockLevel;
+            quantity = Station.Quantity;
+        }
+    }
+
+    private async Task Submit()
+    {
+        await form.Validate();
+        if (!isValid) return;
+
+        var result = Station is null
+            ? new MiningStation { MineId = MineId, MinerMk = minerMk, OverclockLevel = overclockLevel, Quantity = quantity }
+            : new MiningStation { Id = Station.Id, MineId = Station.MineId, MinerMk = minerMk, OverclockLevel = overclockLevel, Quantity = quantity };
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

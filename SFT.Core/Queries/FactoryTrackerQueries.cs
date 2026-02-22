@@ -13,6 +13,7 @@ public class FactoryTrackerQueries(IDbContextFactory<SatisfactoryDbContext> dbCo
             .Include(m => m.Resource)
             .Include(m => m.Outputs)
                 .ThenInclude(o => o.Resource)
+            .Include(m => m.MiningStations)
             .AsNoTracking()
             .OrderBy(m => m.Name)
             .ToListAsync(cancellationToken);
