@@ -7,6 +7,7 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
 {
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<Mine> Mines => Set<Mine>();
+    public DbSet<MineOutput> MineOutputs => Set<MineOutput>();
     public DbSet<Factory> Factories => Set<Factory>();
     public DbSet<FactoryLevel> FactoryLevels => Set<FactoryLevel>();
     public DbSet<FactoryInput> FactoryInputs => Set<FactoryInput>();
@@ -23,6 +24,17 @@ public class SatisfactoryDbContext(DbContextOptions<SatisfactoryDbContext> optio
             .HasOne(m => m.Resource)
             .WithMany()
             .HasForeignKey(m => m.ResourceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<MineOutput>()
+            .HasOne(o => o.Mine)
+            .WithMany(m => m.Outputs)
+            .HasForeignKey(o => o.MineId);
+
+        modelBuilder.Entity<MineOutput>()
+            .HasOne(o => o.Resource)
+            .WithMany()
+            .HasForeignKey(o => o.ResourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<FactoryLevel>()

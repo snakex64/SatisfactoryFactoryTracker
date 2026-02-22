@@ -31,13 +31,16 @@
             </div>
             @foreach (var mine in mines)
             {
-                <div class="d-flex align-center pl-2 mb-1">
-                    <MudText Typo="Typo.body2" Class="flex-grow-1">
-                        @mine.Name
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="display: inline; margin-left: 4px;">
-                            (@(mine.Resource?.Name ?? "?"), @mine.OutputPerMinute/min)
+                <div class="d-flex align-center pl-2 mb-1 @(selectedMine?.Id == mine.Id ? "selected-level" : "")"
+                     style="cursor: pointer; border-radius: 4px; @(selectedMine?.Id == mine.Id ? "background: var(--mud-palette-action-default-hover);" : "")">
+                    <div class="flex-grow-1" @onclick="() => SelectMine(mine)">
+                        <MudText Typo="Typo.body2">
+                            @mine.Name
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Style="display: inline; margin-left: 4px;">
+                                (@(mine.Resource?.Name ?? "?"), @mine.OutputPerMinute/min)
+                            </MudText>
                         </MudText>
-                    </MudText>
+                    </div>
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit mine" OnClick="() => OpenEditMineDialog(mine)" />
                     <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete mine" OnClick="() => DeleteMine(mine)" />
                 </div>
@@ -95,9 +98,13 @@
     <!-- Right detail panel -->
     <MudItem xs="9" Style="overflow-y: auto; height: 100%;">
         <MudPaper Elevation="0" Class="pa-4">
-            @if (selectedLevel is null)
+            @if (selectedMine is not null)
             {
-                <MudText Typo="Typo.body1" Color="Color.Secondary">Select a factory level to view its details.</MudText>
+                <MineDetail Mine="selectedMine" OnChanged="OnMineChangedAsync" />
+            }
+            else if (selectedLevel is null)
+            {
+                <MudText Typo="Typo.body1" Color="Color.Secondary">Select a mine or factory level to view its details.</MudText>
             }
             else
             {
@@ -117,6 +124,7 @@
     private IReadOnlyList<Resource> resources = [];
     private IReadOnlyList<Resource> allResources = [];
     private FactoryLevel? selectedLevel;
+    private Mine? selectedMine;
     private string? errorMessage;
     private bool _isInteractive;
 
@@ -152,7 +160,17 @@
         }
     }
 
-    private void SelectLevel(FactoryLevel level) => selectedLevel = level;
+    private void SelectLevel(FactoryLevel level)
+    {
+        selectedLevel = level;
+        selectedMine = null;
+    }
+
+    private void SelectMine(Mine mine)
+    {
+        selectedMine = mine;
+        selectedLevel = null;
+    }
 
     private async Task OnLevelChangedAsync()
     {
@@ -160,6 +178,14 @@
         await LoadDataAsync();
         if (previousLevelId is not null)
             selectedLevel = factories.SelectMany(f => f.Levels).FirstOrDefault(l => l.Id == previousLevelId);
+    }
+
+    private async Task OnMineChangedAsync()
+    {
+        var previousMineId = selectedMine?.Id;
+        await LoadDataAsync();
+        if (previousMineId is not null)
+            selectedMine = mines.FirstOrDefault(m => m.Id == previousMineId);
     }
 
     // Mine dialogs
@@ -222,6 +248,8 @@
         {
             try
             {
+                if (selectedMine?.Id == mine.Id)
+                    selectedMine = null;
                 await Commands.DeleteMineAsync(mine.Id);
                 await LoadDataAsync();
                 Snackbar.Add("Mine deleted.", Severity.Success);

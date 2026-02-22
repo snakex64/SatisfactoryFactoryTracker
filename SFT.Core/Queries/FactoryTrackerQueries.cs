@@ -10,6 +10,8 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
     {
         return await dbContext.Mines
             .Include(m => m.Resource)
+            .Include(m => m.Outputs)
+                .ThenInclude(o => o.Resource)
             .AsNoTracking()
             .OrderBy(m => m.Name)
             .ToListAsync(cancellationToken);
@@ -50,6 +52,24 @@ public class FactoryTrackerQueries(SatisfactoryDbContext dbContext) : IFactoryTr
     {
         return await dbContext.Resources
             .Where(r => RawResourceCategories.Contains(r.Category))
+            .AsNoTracking()
+            .OrderBy(r => r.Name)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Resource>> GetResourcesProducibleFromAsync(int rawResourceId, CancellationToken cancellationToken = default)
+    {
+        // Returns only resources that are the direct output of a recipe whose inputs include
+        // the given raw resource. The raw resource itself is intentionally excluded because
+        // mines are expected to output processed goods (e.g. Iron Ingot), not the ore.
+        return await dbContext.Resources
+            .Where(r => dbContext.ProductionRecipeResources.Any(output =>
+                    !output.IsInput
+                    && output.ResourceId == r.Id
+                    && dbContext.ProductionRecipeResources.Any(input =>
+                        input.ProductionRecipeId == output.ProductionRecipeId
+                        && input.IsInput
+                        && input.ResourceId == rawResourceId)))
             .AsNoTracking()
             .OrderBy(r => r.Name)
             .ToListAsync(cancellationToken);
