@@ -11,6 +11,51 @@
     {
         <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">@Level.Description</MudText>
     }
+    
+    <!-- Inputs -->
+    <div class="d-flex align-center mb-2">
+        <MudText Typo="Typo.h6" Class="flex-grow-1">Inputs</MudText>
+        <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" Variant="Variant.Outlined" OnClick="OpenAddInputDialog" data-test-id="add-input-btn">Add Input</MudButton>
+    </div>
+    @if (!Level.Inputs.Any())
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">No inputs configured.</MudText>
+    }
+    else
+    {
+        <MudTable Items="Level.Inputs.OrderBy(i => i.Resource?.Name)" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>Resource</MudTh>
+                <MudTh>Amount / min</MudTh>
+                <MudTh>Source</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Resource?.Name</MudTd>
+                <MudTd>@context.AmountPerMinute</MudTd>
+                <MudTd>
+                    @if (context.SourceMineId is not null)
+                    {
+                        <MudText Typo="Typo.body2">
+                            <MudIcon Icon="@Icons.Material.Filled.Terrain" Size="Size.Small" Class="mr-1" Style="vertical-align: middle;" />
+                            @context.SourceMine?.Name
+                        </MudText>
+                    }
+                    else if (context.SourceFactoryLevelId is not null)
+                    {
+                        <MudText Typo="Typo.body2">
+                            <MudIcon Icon="@Icons.Material.Filled.Factory" Size="Size.Small" Class="mr-1" Style="vertical-align: middle;" />
+                            @SourceLevelLabel(context.SourceFactoryLevel)
+                        </MudText>
+                    }
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit input" OnClick="() => OpenEditInputDialog(context)" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete input" OnClick="() => DeleteInput(context)" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
 
     <!-- Outputs -->
     <div class="d-flex align-center mb-2 mt-4">
@@ -71,50 +116,6 @@
         </MudTable>
     }
 
-    <!-- Inputs -->
-    <div class="d-flex align-center mb-2">
-        <MudText Typo="Typo.h6" Class="flex-grow-1">Inputs</MudText>
-        <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" Variant="Variant.Outlined" OnClick="OpenAddInputDialog" data-test-id="add-input-btn">Add Input</MudButton>
-    </div>
-    @if (!Level.Inputs.Any())
-    {
-        <MudText Typo="Typo.body2" Color="Color.Secondary">No inputs configured.</MudText>
-    }
-    else
-    {
-        <MudTable Items="Level.Inputs.OrderBy(i => i.Resource?.Name)" Dense="true" Hover="true">
-            <HeaderContent>
-                <MudTh>Resource</MudTh>
-                <MudTh>Amount / min</MudTh>
-                <MudTh>Source</MudTh>
-                <MudTh></MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.Resource?.Name</MudTd>
-                <MudTd>@context.AmountPerMinute</MudTd>
-                <MudTd>
-                    @if (context.SourceMineId is not null)
-                    {
-                        <MudText Typo="Typo.body2">
-                            <MudIcon Icon="@Icons.Material.Filled.Terrain" Size="Size.Small" Class="mr-1" Style="vertical-align: middle;" />
-                            @context.SourceMine?.Name
-                        </MudText>
-                    }
-                    else if (context.SourceFactoryLevelId is not null)
-                    {
-                        <MudText Typo="Typo.body2">
-                            <MudIcon Icon="@Icons.Material.Filled.Factory" Size="Size.Small" Class="mr-1" Style="vertical-align: middle;" />
-                            @SourceLevelLabel(context.SourceFactoryLevel)
-                        </MudText>
-                    }
-                </MudTd>
-                <MudTd>
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" aria-label="Edit input" OnClick="() => OpenEditInputDialog(context)" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" aria-label="Delete input" OnClick="() => DeleteInput(context)" />
-                </MudTd>
-            </RowTemplate>
-        </MudTable>
-    }
 }
 
 @code {
